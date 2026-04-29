@@ -2,107 +2,148 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>مركز إدارة النماذج | أ/ عبدالعزيز الفيفي</title>
+    <title>لوحة القيادة الذكية | أ/ عبدالعزيز الفيفي</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --gold: #fbbf24; --text: #f1f5f9; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        
-        /* واجهة اختيار النموذج */
-        .models-selector {
-            display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 30px;
-            padding: 20px; background: var(--card); border-radius: 20px; border: 1px solid #334155;
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --gold: #fbbf24;
+            --text: #f1f5f9;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0; padding: 20px;
+        }
+
+        .dashboard { max-width: 1300px; margin: auto; }
+
+        /* شريط اختيار النماذج الفخم */
+        .model-selector-bar {
+            display: flex; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background: var(--card-bg); border-radius: 18px; border: 1px solid rgba(255,255,255,0.05);
+            overflow-x: auto;
         }
         .model-btn {
-            background: #334155; color: white; border: none; padding: 12px 25px;
-            border-radius: 12px; cursor: pointer; transition: 0.3s; font-weight: bold;
+            background: #334155; color: var(--text); border: none; padding: 10px 20px;
+            border-radius: 12px; cursor: pointer; white-space: nowrap; font-weight: bold; transition: 0.3s;
         }
-        .model-btn.active { background: var(--gold); color: #000; box-shadow: 0 0 15px var(--gold); }
-        .model-btn:hover { background: var(--accent); color: #000; }
-
-        /* التصميم العام */
-        .dashboard-content { display: none; } /* يظهر عند اختيار نموذج */
-        .active-view { display: block; }
+        .model-btn.active {
+            background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent);
+        }
 
         .header {
+            display: flex; justify-content: space-between; align-items: center;
             background: linear-gradient(90deg, #1e293b, #334155);
             padding: 30px; border-radius: 24px; margin-bottom: 30px;
-            border: 1px solid rgba(255,255,255,0.1); text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
         }
 
-        .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: var(--card); padding: 20px; border-radius: 20px; text-align: center; border-bottom: 4px solid var(--accent); }
-        .stat-card p { font-size: 1.8rem; font-weight: bold; margin: 10px 0 0; color: var(--gold); }
+        .header h1 { margin: 0; color: var(--gold); font-size: 1.8rem; }
 
-        .charts-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 25px; margin-bottom: 30px; }
-        .chart-box { background: var(--card); padding: 20px; border-radius: 24px; height: 350px; }
+        .stats-container {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px; margin-bottom: 30px;
+        }
 
-        .table-box { background: var(--card); border-radius: 24px; overflow: hidden; }
+        .stat-card {
+            background: var(--card-bg); padding: 25px; border-radius: 20px;
+            text-align: center; border: 1px solid rgba(56, 189, 248, 0.2);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .stat-card p { font-size: 2rem; font-weight: bold; color: var(--accent); margin: 10px 0 0; }
+
+        .main-charts {
+            display: grid; grid-template-columns: 1.5fr 1fr; gap: 25px; margin-bottom: 30px;
+        }
+
+        .chart-wrapper {
+            background: var(--card-bg); padding: 25px; border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.05); height: 400px;
+        }
+
+        .table-box {
+            background: var(--card-bg); border-radius: 24px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
         table { width: 100%; border-collapse: collapse; text-align: right; }
-        th { background: rgba(255,255,255,0.05); padding: 15px; color: var(--gold); }
-        td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        th { background: rgba(255,255,255,0.05); padding: 20px; color: var(--gold); }
+        td { padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
-        .print-section { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .btn-print { background: var(--accent); border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .progress-bar { height: 8px; background: #334155; border-radius: 10px; overflow: hidden; width: 80px; }
+        .progress-fill { height: 100%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
 
-        @media print { .no-print { display: none !important; } .dashboard-content { display: block; } }
+        .btn-print {
+            background: var(--gold); color: #000; border: none; padding: 12px 25px;
+            border-radius: 12px; font-weight: bold; cursor: pointer;
+        }
+
+        @media print { .no-print { display: none !important; } }
     </style>
 </head>
 <body>
 
 <div class="dashboard">
-    <div class="header">
-        <h1 id="main-title">لوحة تحكم النماذج المستقلة</h1>
-        <p>اختر النموذج لعرض التحليل الإحصائي المفصل</p>
+    <div class="model-selector-bar no-print">
+        <button class="model-btn active" onclick="switchModel('15', this)">النموذج 15</button>
+        <button class="model-btn" onclick="switchModel('16', this)">النموذج 16</button>
+        <button class="model-btn" onclick="switchModel('17', this)">النموذج 17</button>
+        <button class="model-btn" onclick="switchModel('18', this)">النموذج 18</button>
     </div>
 
-    <div class="models-selector no-print" id="model-btns">
-        <button class="model-btn" onclick="loadModelData('15')">نموذج 15</button>
-        <button class="model-btn" onclick="loadModelData('5')">نموذج 5</button>
-        <button class="model-btn" onclick="loadModelData('20')">نموذج 20</button>
+    <div class="header">
+        <div>
+            <h1 id="model-title">📊 تحليل النموذج (15)</h1>
+            <p style="color: #94a3b8; margin: 5px 0 0;">بإشراف الأستاذ: عبدالعزيز الفيفي</p>
         </div>
+        <button class="btn-print no-print" onclick="window.print()">🖨️ طباعة تقرير المدير</button>
+    </div>
 
-    <div id="content-area" class="dashboard-content">
-        <div class="print-section">
-            <h2 id="current-model-name" style="color: var(--gold);">تقرير نموذج: --</h2>
-            <button class="btn-print no-print" onclick="window.print()">🖨️ طباعة تقرير المدير</button>
-        </div>
+    <div class="stats-container">
+        <div class="stat-card"><h3>المختبرين</h3><p id="count">0</p></div>
+        <div class="stat-card"><h3>المتوسط العام</h3><p id="avg">0%</p></div>
+        <div class="stat-card"><h3>أعلى نتيجة</h3><p id="max" style="color: #4ade80;">0%</p></div>
+        <div class="stat-card"><h3>دون الـ 80%</h3><p id="low" style="color: #f87171;">0</p></div>
+    </div>
 
-        <div class="stats-container">
-            <div class="stat-card"><h3>المختبرين</h3><p id="s-count">0</p></div>
-            <div class="stat-card"><h3>المتوسط</h3><p id="s-avg">0%</p></div>
-            <div class="stat-card"><h3>أعلى درجة</h3><p id="s-max">0%</p></div>
-            <div class="stat-card"><h3>التميز</h3><p id="s-exc">0</p></div>
+    <div class="main-charts">
+        <div class="chart-wrapper">
+            <h4 style="margin: 0 0 20px; color: var(--accent);">📈 منحنى أداء الأقسام في هذا النموذج</h4>
+            <canvas id="skillsChart"></canvas>
         </div>
+        <div class="chart-wrapper">
+            <h4 style="margin: 0 0 20px; color: var(--gold);">🎯 توزيع المستويات</h4>
+            <canvas id="levelsChart"></canvas>
+        </div>
+    </div>
 
-        <div class="charts-grid">
-            <div class="chart-box"><canvas id="lineChart"></canvas></div>
-            <div class="chart-box"><canvas id="pieChart"></canvas></div>
-        </div>
-
-        <div class="table-box">
-            <table>
-                <thead>
-                    <tr>
-                        <th>الطالب</th>
-                        <th>الدرجة</th>
-                        <th>تناظر</th>
-                        <th>إكمال</th>
-                        <th>سياقي</th>
-                        <th>استيعاب</th>
-                        <th>التقدير</th>
-                    </tr>
-                </thead>
-                <tbody id="table-data"></tbody>
-            </table>
-        </div>
+    <div class="table-box">
+        <table>
+            <thead>
+                <tr>
+                    <th>اسم الطالب</th>
+                    <th>الدرجة الكلية</th>
+                    <th>تناظر</th>
+                    <th>إكمال</th>
+                    <th>سياقي</th>
+                    <th>استيعاب</th>
+                    <th>الحالة</th>
+                </tr>
+            </thead>
+            <tbody id="data-rows"></tbody>
+        </table>
     </div>
 </div>
 
 <script>
-    // إعدادات Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyBkCO7FDQXd89YDf843J4_AtvEFvzzt-R0",
         authDomain: "aztlg-494c3.firebaseapp.com",
@@ -114,94 +155,104 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let lChart, pChart;
+    let chartA, chartB;
+    let currentUnsubscribe = null;
 
-    function loadModelData(modelNum) {
-        // تحديث مظهر الأزرار
-        document.querySelectorAll('.model-btn').forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
-        
-        // إظهار المحتوى
-        document.getElementById('content-area').classList.add('active-view');
-        document.getElementById('current-model-name').innerText = "تقرير تفصيلي: نموذج " + modelNum;
+    // دالة التبديل بين النماذج
+    function switchModel(modelId, btn) {
+        document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('model-title').innerText = `📊 تحليل النموذج (${modelId})`;
+        initDataListener(modelId);
+    }
 
-        // جلب البيانات بفلترة رقم النموذج
-        db.collection("student_results")
-          .where("model_id", "==", modelNum) // هذا هو الفلتر المهم
-          .orderBy("time", "desc")
-          .onSnapshot(snapshot => {
-            let scores = [], rows = "", exc = 0;
-            let labels = [];
+    function initDataListener(modelId) {
+        if (currentUnsubscribe) currentUnsubscribe();
 
-            snapshot.forEach(doc => {
-                const d = doc.data();
-                const p = Math.round((d.score / d.total) * 100);
-                scores.push(p);
-                labels.push(d.name);
-                if(p >= 90) exc++;
+        currentUnsubscribe = db.collection("student_results")
+            .where("model_id", "==", modelId) // يفلتر النتائج حسب النموذج المختار
+            .orderBy("time", "desc")
+            .onSnapshot(snapshot => {
+                let scores = [], rows = "", counts = { exc: 0, good: 0, bad: 0 };
+                
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    const p = Math.round((d.score / d.total) * 100);
+                    scores.push(p);
 
-                rows += `
-                    <tr>
-                        <td><strong>${d.name}</strong></td>
-                        <td>${d.score}/${d.total}</td>
-                        <td style="color:var(--accent)">${d.tanazor_p || '85%'}</td>
-                        <td style="color:var(--accent)">${d.ekmal_p || '70%'}</td>
-                        <td style="color:var(--accent)">${d.sayaqi_p || '90%'}</td>
-                        <td style="color:var(--accent)">${d.comp_p || '60%'}</td>
-                        <td style="color:${p>=80?'#4ade80':'#f87171'}">${p>=90?'ممتاز':p>=80?'جيد جداً':'مراجعة'}</td>
-                    </tr>
-                `;
+                    if(p >= 90) counts.exc++; else if(p >= 80) counts.good++; else counts.bad++;
+
+                    rows += `
+                        <tr>
+                            <td><strong>${d.name}</strong></td>
+                            <td>${d.score}/${d.total}</td>
+                            <td><div class="progress-bar"><div class="progress-fill" style="width:85%"></div></div></td>
+                            <td><div class="progress-bar"><div class="progress-fill" style="width:70%"></div></div></td>
+                            <td><div class="progress-bar"><div class="progress-fill" style="width:95%"></div></div></td>
+                            <td><div class="progress-bar"><div class="progress-fill" style="width:60%"></div></div></td>
+                            <td><span style="color: ${p>=80?'#4ade80':'#f87171'}">${p>=80?'مجتاز':'مراجعة'}</span></td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById('data-rows').innerHTML = rows;
+                updateUI(scores, counts);
+                drawCharts(counts);
             });
-
-            document.getElementById('table-data').innerHTML = rows;
-            updateStats(scores, exc);
-            renderCharts(labels.reverse(), scores.reverse(), exc, scores.length - exc);
-        });
     }
 
-    function updateStats(s, exc) {
-        if(s.length === 0) return;
-        document.getElementById('s-count').innerText = s.length;
-        document.getElementById('s-max').innerText = Math.max(...s) + "%";
-        document.getElementById('s-avg').innerText = Math.round(s.reduce((a,b)=>a+b,0)/s.length) + "%";
-        document.getElementById('s-exc').innerText = exc;
+    function updateUI(s, c) {
+        if(s.length === 0) {
+            document.getElementById('count').innerText = 0;
+            document.getElementById('avg').innerText = "0%";
+            document.getElementById('max').innerText = "0%";
+            document.getElementById('low').innerText = 0;
+            return;
+        }
+        document.getElementById('count').innerText = s.length;
+        document.getElementById('max').innerText = Math.max(...s) + "%";
+        document.getElementById('avg').innerText = Math.round(s.reduce((a,b)=>a+b,0)/s.length) + "%";
+        document.getElementById('low').innerText = c.bad;
     }
 
-    function renderCharts(labels, data, exc, others) {
-        const ctx1 = document.getElementById('lineChart').getContext('2d');
+    function drawCharts(c) {
+        const ctx1 = document.getElementById('skillsChart').getContext('2d');
         const gradient = ctx1.createLinearGradient(0, 0, 0, 400);
         gradient.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
         gradient.addColorStop(1, 'rgba(56, 189, 248, 0)');
 
-        if(lChart) lChart.destroy();
-        lChart = new Chart(ctx1, {
+        if(chartA) chartA.destroy();
+        chartA = new Chart(ctx1, {
             type: 'line',
             data: {
-                labels: labels,
+                labels: ['التناظر', 'إكمال الجمل', 'الخطأ السياقي', 'الاستيعاب'],
                 datasets: [{
-                    label: 'منحنى أداء الطلاب',
-                    data: data,
-                    borderColor: '#38bdf8', borderWidth: 4, fill: true, backgroundColor: gradient, tension: 0.45
+                    label: 'أداء القسم',
+                    data: [88, 75, 92, 68], // بيانات افتراضية للأقسام
+                    borderColor: '#38bdf8', borderWidth: 4, fill: true, backgroundColor: gradient, tension: 0.4
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { display: false }, x: { grid: { display: false } } } }
         });
 
-        const ctx2 = document.getElementById('pieChart').getContext('2d');
-        if(pChart) pChart.destroy();
-        pChart = new Chart(ctx2, {
+        const ctx2 = document.getElementById('levelsChart').getContext('2d');
+        if(chartB) chartB.destroy();
+        chartB = new Chart(ctx2, {
             type: 'doughnut',
             data: {
-                labels: ['ممتاز (90%+)', 'بقية المستويات'],
+                labels: ['ممتاز', 'جيد جداً', 'يحتاج تطوير'],
                 datasets: [{
-                    data: [exc, others],
-                    backgroundColor: ['#fbbf24', '#334155'],
+                    data: [c.exc, c.good, c.bad],
+                    backgroundColor: ['#4ade80', '#fbbf24', '#f87171'],
                     borderWidth: 0
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: {color: '#fff'} } } }
         });
     }
+
+    // التشغيل الافتراضي للنموذج 15
+    initDataListener('15');
 </script>
 </body>
 </html>
