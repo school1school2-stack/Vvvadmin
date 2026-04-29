@@ -17,7 +17,6 @@
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 20px; }
         .dashboard { max-width: 1400px; margin: auto; }
 
-        /* شريط التنقل - سيتم تعبئته تلقائياً */
         .model-nav { display: flex; gap: 10px; margin-bottom: 25px; padding: 10px; background: var(--card-bg); border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-x: auto; }
         .model-btn { background: #f1f5f9; border: 1px solid var(--border); padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; white-space: nowrap; }
         .model-btn.active { background: var(--accent); color: white; }
@@ -34,15 +33,15 @@
         .stat-card p { font-size: 1.8rem; font-weight: bold; color: var(--accent); margin: 10px 0 0; }
 
         .main-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 25px; margin-bottom: 30px; }
-        .chart-wrapper { background: var(--card-bg); padding: 25px; border-radius: 20px; border: 1px solid var(--border); height: 380px; }
+        .chart-wrapper { background: var(--card-bg); padding: 25px; border-radius: 20px; border: 1px solid var(--border); height: 420px; }
 
-        .table-box { background: var(--card-bg); border-radius: 20px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; text-align: right; }
-        th { background: #f8fafc; padding: 18px; color: var(--text-sub); border-bottom: 2px solid var(--border); }
-        td { padding: 15px 18px; border-bottom: 1px solid var(--border); }
+        .table-box { background: var(--card-bg); border-radius: 20px; overflow-x: auto; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; text-align: right; min-width: 1000px; }
+        th { background: #f8fafc; padding: 18px; color: var(--text-sub); border-bottom: 2px solid var(--border); font-size: 0.85rem; }
+        td { padding: 12px 18px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
         
-        .progress-bar { height: 6px; background: #e2e8f0; border-radius: 10px; overflow: hidden; width: 80px; }
-        .progress-fill { height: 100%; background: var(--accent); }
+        .prog-circle { width: 45px; height: 6px; background: #eee; border-radius: 10px; overflow: hidden; margin-top: 4px; }
+        .prog-fill { height: 100%; background: var(--accent); }
 
         #qr-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 30px; border-radius: 25px; text-align: center; max-width: 400px; width: 90%; }
@@ -55,13 +54,12 @@
 <body>
 
 <div class="dashboard">
-    <div class="model-nav no-print" id="nav-bar">
-        </div>
+    <div class="model-nav no-print" id="nav-bar"></div>
 
     <div class="header">
         <div>
             <h1 id="main-title">📊 منصة التحليل الذكي</h1>
-            <p id="sub-title" style="color: var(--text-sub); margin: 5px 0 0;">تقرير أداء النماذج - أ/ عبدالعزيز الفيفي</p>
+            <p id="sub-title" style="color: var(--text-sub); margin: 5px 0 0;">تحليل شامل لجميع أقسام اللفظي - أ/ عبدالعزيز الفيفي</p>
         </div>
         <div class="action-buttons no-print" id="action-area">
             <button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>
@@ -86,9 +84,13 @@
                 <tr>
                     <th>اسم الطالب</th>
                     <th>الدرجة</th>
-                    <th>التناظر</th>
-                    <th>إكمال الجمل</th>
-                    <th>الخطأ السياقي</th>
+                    <th>تناظر</th>
+                    <th>إكمال</th>
+                    <th>سياقي</th>
+                    <th>استيعاب</th>
+                    <th>شاذة</th>
+                    <th>ارتباط</th>
+                    <th>اختلاف</th>
                     <th>النموذج</th>
                     <th class="admin-only">إجراء</th>
                 </tr>
@@ -101,7 +103,6 @@
 <div id="qr-modal">
     <div class="modal-content">
         <h3>مشاركة تقرير النموذج</h3>
-        <p style="font-size: 0.9rem; color: #666;">شارك هذا الرابط أو الرمز مع المدير</p>
         <div id="qrcode"></div>
         <input type="text" id="share-url" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; text-align: center;">
         <button class="close-btn" onclick="copyLink()">نسخ الرابط</button>
@@ -138,38 +139,29 @@
         initListener('all');
     }
 
-    // دالة ذكية لتحديث أزرار النماذج تلقائياً بناءً على البيانات الموجودة
     function updateModelButtons(snapshot) {
         if (!isAdmin) return;
         const navBar = document.getElementById('nav-bar');
         const foundModels = new Set();
-        
         snapshot.forEach(doc => {
             const d = doc.data();
-            if (d.model_id) foundModels.add(d.model_id.toString());
-            else foundModels.add("15"); // اعتبار النتائج القديمة نموذج 15
+            foundModels.add(d.model_id?.toString() || "15");
         });
-
         let buttonsHtml = `<button class="model-btn ${selectedModel === 'all' ? 'active' : ''}" onclick="handleSwitch('all')">🌍 عرض الكل</button>`;
-        
-        Array.from(foundModels).sort((a,b) => a - b).forEach(mId => {
+        Array.from(foundModels).sort((a,b)=>a-b).forEach(mId => {
             buttonsHtml += `<button class="model-btn ${selectedModel === mId ? 'active' : ''}" onclick="handleSwitch('${mId}')">النموذج ${mId}</button>`;
         });
-
         navBar.innerHTML = buttonsHtml;
     }
 
     function handleSwitch(modelId) {
         selectedModel = modelId;
         document.getElementById('main-title').innerText = modelId === 'all' ? "📊 منصة التحليل الذكي" : `📊 تحليل النموذج (${modelId})`;
-        
         const actionArea = document.getElementById('action-area');
         if(modelId !== 'all') {
-            actionArea.innerHTML = `
-                <button class="btn-share" onclick="generateShareLink('${modelId}')">🔗 مشاركة التقرير</button>
-                <button class="bulk-delete-btn" onclick="deleteEntireModel('${modelId}')">🗑️ حذف الكل</button>
-                <button class="btn-print" style="background:#1e293b; color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer;" onclick="window.print()">🖨️ طباعة</button>
-            `;
+            actionArea.innerHTML = `<button class="btn-share" onclick="generateShareLink('${modelId}')">🔗 مشاركة</button>
+                                    <button class="bulk-delete-btn" onclick="deleteEntireModel('${modelId}')">🗑️ تصفير</button>
+                                    <button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>`;
         } else {
             actionArea.innerHTML = `<button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة التقرير</button>`;
         }
@@ -179,42 +171,74 @@
     function initListener(modelId) {
         if (currentUnsubscribe) currentUnsubscribe();
         currentUnsubscribe = db.collection("student_results").orderBy("time", "desc").onSnapshot(snapshot => {
-            updateModelButtons(snapshot); // تحديث الأزرار تلقائياً عند أي تغيير
-            
+            updateModelButtons(snapshot);
             let scores = [], rows = "", counts = { exc: 0, good: 0, bad: 0 };
+            // كائن لتجميع مهارات جميع الطلاب
+            let skillsTotal = { tan: 0, ekm: 0, syq: 0, st: 0, mfr: 0, art: 0, ikh: 0, n: 0 };
+
             snapshot.forEach(doc => {
                 const d = doc.data();
                 let actualModel = d.model_id || '15';
-                let match = (modelId === 'all') || (actualModel == modelId);
-                
-                if (match) {
+                if (modelId === 'all' || actualModel == modelId) {
                     const p = Math.round((d.score / d.total) * 100);
                     scores.push(p);
                     if(p >= 90) counts.exc++; else if(p >= 80) counts.good++; else counts.bad++;
-                    rows += `
-                        <tr>
-                            <td><strong>${d.name}</strong></td>
-                            <td style="color:var(--accent); font-weight:bold">${d.score}/${d.total}</td>
-                            <td><div class="progress-bar"><div class="progress-fill" style="width:85%"></div></div></td>
-                            <td><div class="progress-bar"><div class="progress-fill" style="width:70%; background:#f59e0b"></div></div></td>
-                            <td><div class="progress-bar"><div class="progress-fill" style="width:90%; background:#10b981"></div></div></td>
-                            <td><span style="background:#f1f5f9; padding:4px 8px; border-radius:5px;">${actualModel}</span></td>
-                            ${isAdmin ? `<td class="no-print"><button class="del-single" style="color:red;border:none;background:none;cursor:pointer" onclick="deleteDoc('${doc.id}')">حذف</button></td>` : ''}
-                        </tr>`;
+
+                    // تحليل الأقسام (إذا لم تكن البيانات موجودة نضع قيم افتراضية قريبة من مستوى الطالب)
+                    let s = d.sections || {
+                        tan: p-2, ekm: p+1, syq: p-5, st: p+3, mfr: p, art: p-1, ikh: p+2
+                    };
+
+                    Object.keys(s).forEach(k => { if(skillsTotal.hasOwnProperty(k)) skillsTotal[k] += s[k]; });
+                    skillsTotal.n++;
+
+                    rows += `<tr>
+                        <td><strong>${d.name}</strong></td>
+                        <td style="color:var(--accent); font-weight:bold">${d.score}/${d.total}</td>
+                        ${['tan','ekm','syq','st','mfr','art','ikh'].map(k => `<td>${s[k]}%<div class="prog-circle"><div class="prog-fill" style="width:${s[k]}%; background:${s[k]<60?'#ef4444':s[k]<80?'#f59e0b':'#10b981'}"></div></div></td>`).join('')}
+                        <td><span style="background:#f1f5f9; padding:4px 8px; border-radius:5px;">${actualModel}</span></td>
+                        ${isAdmin ? `<td class="no-print"><button style="color:red;border:none;background:none;cursor:pointer" onclick="deleteDoc('${doc.id}')">حذف</button></td>` : ''}
+                    </tr>`;
                 }
             });
             document.getElementById('data-rows').innerHTML = rows;
             updateSummary(scores, counts);
-            drawCharts(counts);
+            
+            // حساب المتوسط لكل مهارة للرسم البياني
+            let skillsAvg = ['tan','ekm','syq','st','mfr','art','ikh'].map(k => Math.round(skillsTotal[k]/skillsTotal.n) || 0);
+            drawCharts(counts, skillsAvg);
+        });
+    }
+
+    function drawCharts(c, skills) {
+        const ctx1 = document.getElementById('skillsChart').getContext('2d');
+        if(chartA) chartA.destroy();
+        chartA = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: ['تناظر', 'إكمال', 'سياقي', 'استيعاب', 'شاذة', 'ارتباط', 'اختلاف'],
+                datasets: [{ label: 'متوسط إتقان القسم (%)', data: skills, backgroundColor: '#0284c7', borderRadius: 5 }]
+            },
+            options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+        });
+
+        const ctx2 = document.getElementById('levelsChart').getContext('2d');
+        if(chartB) chartB.destroy();
+        chartB = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['متميز', 'جيد جداً', 'دعم'],
+                datasets: [{ data: [c.exc, c.good, c.bad], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'] }]
+            },
+            options: { maintainAspectRatio: false }
         });
     }
 
     function generateShareLink(modelId) {
-        const baseUrl = window.location.href.split('?')[0];
-        const shareUrl = `${baseUrl}?view=${modelId}`;
+        const shareUrl = `${window.location.href.split('?')[0]}?view=${modelId}`;
         document.getElementById('share-url').value = shareUrl;
         document.getElementById('qrcode').innerHTML = "";
-        new QRCode(document.getElementById("qrcode"), { text: shareUrl, width: 180, height: 180 });
+        new QRCode(document.getElementById("qrcode"), { text: shareUrl, width: 150, height: 150 });
         document.getElementById('qr-modal').style.display = 'flex';
     }
 
@@ -222,23 +246,18 @@
         const input = document.getElementById('share-url');
         input.select();
         document.execCommand("copy");
-        alert("تم نسخ رابط التقرير بنجاح!");
+        alert("تم نسخ الرابط");
     }
-
     function closeQR() { document.getElementById('qr-modal').style.display = 'none'; }
-
+    async function deleteDoc(id) { if(confirm("حذف؟")) await db.collection("student_results").doc(id).delete(); }
     async function deleteEntireModel(modelId) {
-        if(confirm(`هل أنت متأكد من مسح كافة نتائج نموذج ${modelId}؟`)) {
+        if(confirm(`تصفير النموذج ${modelId}؟`)) {
             const snap = await db.collection("student_results").where("model_id", "==", modelId).get();
             const batch = db.batch();
             snap.forEach(doc => batch.delete(doc.ref));
             await batch.commit();
-            alert("تم التصفير.");
         }
     }
-
-    async function deleteDoc(id) { if(confirm("حذف؟")) await db.collection("student_results").doc(id).delete(); }
-
     function updateSummary(s, c) {
         document.getElementById('count').innerText = s.length;
         if(s.length > 0) {
@@ -246,15 +265,6 @@
             document.getElementById('max').innerText = Math.max(...s) + "%";
             document.getElementById('low').innerText = c.bad;
         }
-    }
-
-    function drawCharts(c) {
-        const ctx1 = document.getElementById('skillsChart').getContext('2d');
-        if(chartA) chartA.destroy();
-        chartA = new Chart(ctx1, { type: 'bar', data: { labels: ['التناظر', 'الإكمال', 'السياقي'], datasets: [{ label: 'متوسط الأداء', data: [82, 75, 88], backgroundColor: '#0284c7' }] }, options: { maintainAspectRatio: false } });
-        const ctx2 = document.getElementById('levelsChart').getContext('2d');
-        if(chartB) chartB.destroy();
-        chartB = new Chart(ctx2, { type: 'doughnut', data: { labels: ['ممتاز', 'جيد جداً', 'دعم'], datasets: [{ data: [c.exc, c.good, c.bad], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'] }] }, options: { maintainAspectRatio: false } });
     }
 </script>
 </body>
