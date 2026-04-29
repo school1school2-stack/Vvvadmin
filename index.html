@@ -2,150 +2,76 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة التحكم الاحترافية - أ/ عبدالعزيز الفيفي</title>
-    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <style>
-        :root { 
-            --main-blue: #1a237e; 
-            --gold-premium: #c5a021; 
-            --bg-light: #f8f9fa;
-            --white: #ffffff;
-        }
+        :root { --main: #1a237e; --gold: #c5a021; --white: #ffffff; --bg: #f4f7f9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .wrapper { max-width: 1200px; margin: auto; }
+        .header { background: linear-gradient(135deg, var(--main), #0d47a1); color: var(--gold); padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         
-        body { 
-            font-family: 'Segoe UI', Tahoma, sans-serif; 
-            background-color: var(--bg-light); 
-            margin: 0; padding: 20px; color: #333; 
-        }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { background: var(--white); padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-bottom: 4px solid var(--gold); }
+        .card h3 { font-size: 0.9rem; color: #666; margin: 0; }
+        .card .num { font-size: 2rem; font-weight: bold; color: var(--main); display: block; margin-top: 10px; }
 
-        .dashboard-wrapper { max-width: 1200px; margin: auto; }
-
-        /* الهيدر الاحترافي */
-        .admin-header {
-            background: linear-gradient(135deg, var(--main-blue), #0d47a1);
-            color: var(--gold-premium);
-            padding: 40px;
-            border-radius: 20px;
-            text-align: center;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        }
-
-        /* كروت الإحصائيات السريعة */
-        .stats-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
-            gap: 20px; margin-bottom: 30px; 
-        }
-        .stat-card {
-            background: var(--white);
-            padding: 25px;
-            border-radius: 18px;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            border-bottom: 5px solid var(--gold-premium);
-            transition: 0.3s;
-        }
-        .stat-card:hover { transform: translateY(-5px); }
-        .stat-card h3 { margin: 0; font-size: 0.9rem; color: #777; text-transform: uppercase; }
-        .stat-card .value { font-size: 2.2rem; font-weight: bold; color: var(--main-blue); margin-top: 10px; display: block; }
-
-        /* منطقة الرسوم البيانية */
-        .charts-section { 
-            display: grid; 
-            grid-template-columns: 2fr 1fr; 
-            gap: 25px; margin-bottom: 30px; 
-        }
-        .chart-box {
-            background: var(--white);
-            padding: 25px;
-            border-radius: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            min-height: 400px;
-        }
-
-        /* جدول البيانات */
-        .table-container {
-            background: var(--white);
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #f1f3f5; color: var(--main-blue); padding: 18px; text-align: right; }
-        td { padding: 15px 18px; border-bottom: 1px solid #eee; }
-        tr:hover { background: #fcf9ee; }
-
-        .badge { padding: 6px 12px; border-radius: 8px; font-weight: bold; font-size: 0.8rem; }
-        .success { background: #e8f5e9; color: #2e7d32; }
-        .warning { background: #fff3e0; color: #ef6c00; }
-
-        .btn-print {
-            background: var(--main-blue);
-            color: var(--gold-premium);
-            border: none;
-            padding: 12px 30px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 1rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-
-        @media (max-width: 900px) { .charts-section { grid-template-columns: 1fr; } }
-        @media print { .no-print { display: none !important; } }
+        .charts-row { display: grid; grid-template-columns: 1.5fr 1fr; gap: 25px; margin-bottom: 30px; }
+        .chart-container { background: var(--white); padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); height: 400px; }
+        
+        table { width: 100%; background: var(--white); border-collapse: collapse; border-radius: 15px; overflow: hidden; }
+        th { background: #eee; padding: 15px; text-align: right; color: var(--main); }
+        td { padding: 12px 15px; border-bottom: 1px solid #f0f0f0; }
+        .badge { padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: bold; }
+        .excel { background: #e8f5e9; color: #2e7d32; }
+        .vgood { background: #e3f2fd; color: #1565c0; }
+        .good { background: #fff3e0; color: #ef6c00; }
+        .weak { background: #ffebee; color: #c62828; }
+        
+        .print-btn { background: var(--main); color: var(--gold); border: none; padding: 12px 25px; border-radius: 10px; cursor: pointer; font-weight: bold; float: left; }
+        @media print { .no-print { display: none; } }
     </style>
 </head>
 <body>
 
-<div class="dashboard-wrapper">
-    <div class="admin-header">
-        <h1 style="margin:0; font-size: 2.5rem;">نظام تحليل الأداء الرقمي (Vvvadmin)</h1>
-        <p style="margin:10px 0 0; font-size: 1.2rem; opacity: 0.9;">تقرير مفصل بإشراف الأستاذ عبدالعزيز الفيفي</p>
+<div class="wrapper">
+    <div class="header">
+        <h1>📊 لوحة التحليل الإحصائي للنماذج</h1>
+        <p>إعداد الأستاذ: عبدالعزيز الفيفي</p>
     </div>
 
     <div class="stats-grid no-print">
-        <div class="stat-card"><h3>إجمالي المختبرين</h3><span class="value" id="total-v">0</span></div>
-        <div class="stat-card"><h3>متوسط الدرجات</h3><span class="value" id="avg-v">0</span></div>
-        <div class="stat-card"><h3>أعلى درجة</h3><span class="value" id="max-v" style="color: #2e7d32;">0</span></div>
-        <div class="stat-card"><h3>نسبة التميز</h3><span class="value" id="exc-v" style="color: var(--gold-premium);">0%</span></div>
+        <div class="card"><h3>إجمالي الطلاب</h3><span class="num" id="total-s">0</span></div>
+        <div class="card"><h3>متوسط الأداء</h3><span class="num" id="avg-p">0%</span></div>
+        <div class="card"><h3>أعلى نسبة</h3><span class="num" id="max-p" style="color:green">0%</span></div>
+        <div class="card"><h3>أدنى نسبة</h3><span class="num" id="min-p" style="color:red">0%</span></div>
     </div>
 
-    <div class="charts-section">
-        <div class="chart-box">
-            <h3 style="text-align: center; color: var(--main-blue);">📈 منحنى الأداء الانسيابي</h3>
-            <canvas id="mainChart"></canvas>
+    <div class="charts-row">
+        <div class="chart-container">
+            <h3 style="text-align:center">📈 توزيع مستويات الطلاب (المنحنى الاحترافي)</h3>
+            <canvas id="lineChart"></canvas>
         </div>
-        <div class="chart-box">
-            <h3 style="text-align: center; color: var(--main-blue);">🎯 توزيع المستويات</h3>
+        <div class="chart-container">
+            <h3 style="text-align:center">🎯 تصنيف التقديرات</h3>
             <canvas id="pieChart"></canvas>
         </div>
     </div>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin:0;">📋 سجل النتائج التفصيلي</h2>
-        <button class="btn-print no-print" onclick="window.print()">🖨️ طباعة التقرير للمدير</button>
-    </div>
-
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>اسم الطالب</th>
-                    <th>الدرجة</th>
-                    <th>النسبة المئوية</th>
-                    <th>تاريخ الاختبار</th>
-                    <th>الحالة</th>
-                </tr>
-            </thead>
-            <tbody id="table-body"></tbody>
-        </table>
-    </div>
+    <button class="print-btn no-print" onclick="window.print()">🖨️ طباعة تقرير المدير</button>
+    <h2 style="margin-top:0">📋 سجل نتائج النموذج 15</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>اسم الطالب</th>
+                <th>الدرجة</th>
+                <th>النسبة</th>
+                <th>التقدير</th>
+            </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+    </table>
 </div>
 
 <script>
@@ -161,87 +87,84 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let mainChart, pieChart;
+    let lineChart, pieChart;
 
     db.collection("student_results").orderBy("time", "desc").onSnapshot(snapshot => {
-        let scores = [], labels = [], rows = "", excellentCount = 0;
+        let allData = [];
+        let counts = { ممتاز: 0, جيدجدا: 0, جيد: 0, ضعيف: 0 };
         
         snapshot.forEach(doc => {
-            const data = doc.data();
-            const percent = Math.round((data.score / data.total) * 100);
-            const dateStr = data.time ? data.time.toDate().toLocaleDateString('ar-SA') : "-";
-            
-            scores.push(data.score);
-            labels.push(data.name);
-            if(percent >= 90) excellentCount++;
+            const d = doc.data();
+            const p = Math.round((d.score / d.total) * 100);
+            let grade = "";
+            let cls = "";
 
-            rows += `
-                <tr>
-                    <td><strong>${data.name}</strong></td>
-                    <td>${data.score} / ${data.total}</td>
-                    <td>${percent}%</td>
-                    <td>${dateStr}</td>
-                    <td><span class="badge ${percent >= 80 ? 'success' : 'warning'}">${percent >= 80 ? 'متميز' : 'يحتاج تطوير'}</span></td>
-                </tr>
-            `;
+            if (p >= 90) { grade = "ممتاز"; cls = "excel"; counts.ممتاز++; }
+            else if (p >= 80) { grade = "جيد جداً"; cls = "vgood"; counts.جيدجدا++; }
+            else if (p >= 65) { grade = "جيد"; cls = "good"; counts.جيد++; }
+            else { grade = "ضعيف"; cls = "weak"; counts.ضعيف++; }
+
+            allData.push({ name: d.name, score: d.score, total: d.total, percent: p, grade: grade, cls: cls });
         });
 
-        document.getElementById('table-body').innerHTML = rows;
-        updateUI(scores, excellentCount);
-        renderCharts(labels.reverse(), scores.reverse());
+        renderUI(allData, counts);
     });
 
-    function updateUI(scores, excCount) {
-        if(scores.length === 0) return;
-        document.getElementById('total-v').innerText = scores.length;
-        document.getElementById('max-v').innerText = Math.max(...scores);
-        document.getElementById('avg-v').innerText = (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1);
-        document.getElementById('exc-v').innerText = Math.round((excCount/scores.length)*100) + "%";
+    function renderUI(data, counts) {
+        // تحديث الجدول
+        let rows = "";
+        data.forEach(s => {
+            rows += `<tr><td>${s.name}</td><td>${s.score}/${s.total}</td><td>${s.percent}%</td><td><span class="badge ${s.cls}">${s.grade}</span></td></tr>`;
+        });
+        document.getElementById('table-body').innerHTML = rows;
+
+        // تحديث الإحصائيات
+        const percents = data.map(s => s.percent);
+        document.getElementById('total-s').innerText = data.length;
+        document.getElementById('avg-p').innerText = Math.round(percents.reduce((a,b)=>a+b,0)/percents.length) + "%";
+        document.getElementById('max-p').innerText = Math.max(...percents) + "%";
+        document.getElementById('min-p').innerText = Math.min(...percents) + "%";
+
+        updateCharts(data, counts);
     }
 
-    function renderCharts(labels, scores) {
-        const ctx1 = document.getElementById('mainChart').getContext('2d');
+    function updateCharts(data, counts) {
+        // المنحنى الانسيابي (التدرج كما في الصور)
+        const ctx1 = document.getElementById('lineChart').getContext('2d');
         const grad = ctx1.createLinearGradient(0, 0, 0, 400);
         grad.addColorStop(0, 'rgba(197, 160, 33, 0.4)');
-        grad.addColorStop(1, 'rgba(197, 160, 33, 0.0)');
+        grad.addColorStop(1, 'rgba(197, 160, 33, 0)');
 
-        if(mainChart) mainChart.destroy();
-        mainChart = new Chart(ctx1, {
+        if(lineChart) lineChart.destroy();
+        lineChart = new Chart(ctx1, {
             type: 'line',
             data: {
-                labels: labels,
+                labels: data.map(s => s.name).reverse(),
                 datasets: [{
-                    data: scores,
+                    label: 'نسبة النجاح',
+                    data: data.map(s => s.percent).reverse(),
                     borderColor: '#c5a021',
-                    borderWidth: 5,
-                    backgroundColor: grad,
+                    borderWidth: 4,
                     fill: true,
-                    tension: 0.45, // المنحنى الانسيابي
-                    pointBackgroundColor: '#ffffff',
-                    pointBorderColor: '#1a237e',
-                    pointRadius: 6
+                    backgroundColor: grad,
+                    tension: 0.4,
+                    pointBackgroundColor: '#1a237e',
+                    pointRadius: 5
                 }]
             },
-            options: { 
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, max: 40 } }
-            }
+            options: { responsive: true, maintainAspectRatio: false }
         });
 
+        // المخطط الدائري (التصنيف)
         const ctx2 = document.getElementById('pieChart').getContext('2d');
         if(pieChart) pieChart.destroy();
         pieChart = new Chart(ctx2, {
             type: 'doughnut',
             data: {
-                labels: ['90-100%', '80-89%', 'دون 80%'],
+                labels: ['ممتاز (90-100%)', 'جيد جداً (80-89%)', 'جيد (65-79%)', 'ضعيف (دون 65%)'],
                 datasets: [{
-                    data: [
-                        scores.filter(s => (s/40)*100 >= 90).length,
-                        scores.filter(s => (s/40)*100 >= 80 && (s/40)*100 < 90).length,
-                        scores.filter(s => (s/40)*100 < 80).length
-                    ],
-                    backgroundColor: ['#1b5e20', '#c5a021', '#b71c1c']
+                    data: [counts.ممتاز, counts.جيدجدا, counts.جيد, counts.ضعيف],
+                    backgroundColor: ['#1b5e20', '#1565c0', '#f9a825', '#c62828']
                 }]
             },
             options: { responsive: true, maintainAspectRatio: false }
