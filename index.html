@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>لوحة التحكم - أ/ عبدالعزيز الفيفي</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; text-align: center; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 1100px; margin: auto; }
+        h2 { color: #b19410; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 15px; border: 1px solid #eee; text-align: center; }
+        th { background: #212121; color: #ffc107; }
+        .model-tag { background: #fff8e1; color: #b19410; padding: 4px 8px; border-radius: 5px; font-size: 0.85rem; font-weight: bold; border: 1px solid #ffe082; }
+        tr:nth-child(even) { background: #fafafa; }
+        .no-data { padding: 40px; color: #999; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>سجل نتائج الطلاب (جميع النماذج)</h2>
+    <table id="resultsTable">
+        <thead>
+            <tr>
+                <th>اسم الطالب</th>
+                <th>اسم النموذج</th>
+                <th>الدرجة</th>
+                <th>التاريخ والوقت</th>
+            </tr>
+        </thead>
+        <tbody id="data-body">
+            <tr><td colspan="4" class="no-data">جاري تحميل النتائج من قاعدة البيانات...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    var firebaseConfig = {
+        apiKey: "AIzaSyBkCO7FDQXd89YDf843J4_AtvEFvzzt-R0",
+        authDomain: "aztlg-494c3.firebaseapp.com",
+        projectId: "aztlg-494c3",
+        storageBucket: "aztlg-494c3.firebasestorage.app",
+        messagingSenderId: "597051893949",
+        appId: "1:597051893949:web:de5554ac900317a92b2fd4"
+    };
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.firestore();
+
+    // جلب البيانات مع التحديث التلقائي فور وصول أي نتيجة جديدة
+    db.collection("student_results").orderBy("time", "desc").onSnapshot((querySnapshot) => {
+        const tbody = document.getElementById("data-body");
+        tbody.innerHTML = "";
+        
+        if (querySnapshot.empty) {
+            tbody.innerHTML = '<tr><td colspan="4" class="no-data">لا توجد نتائج مسجلة حتى الآن</td></tr>';
+            return;
+        }
+
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const date = data.time ? data.time.toDate().toLocaleString('ar-SA') : 'قيد المعالجة';
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${data.name}</strong></td>
+                    <td><span class="model-tag">${data.model_name || 'نموذج عام'}</span></td>
+                    <td style="color:green; font-weight:bold;">${data.score} / ${data.total}</td>
+                    <td style="color:#666; font-size:0.9rem;">${date}</td>
+                </tr>`;
+        });
+    });
+</script>
+</body>
+</html>
