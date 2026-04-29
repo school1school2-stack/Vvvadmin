@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>إدارة النتائج - أ/ عبدالعزيز الفيفي</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; padding: 30px; text-align: center; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 1000px; margin: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #eee; }
+        th { background: #b19410; color: white; }
+        .tag { background: #eee; padding: 3px 8px; border-radius: 5px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>سجل نتائج الطلاب (كافة النماذج)</h2>
+        <table id="tbl">
+            <thead>
+                <tr>
+                    <th>اسم الطالب</th>
+                    <th>النموذج</th>
+                    <th>الدرجة</th>
+                    <th>التوقيت</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyBkCO7FDQXd89YDf843J4_AtvEFvzzt-R0",
+            authDomain: "aztlg-494c3.firebaseapp.com",
+            projectId: "aztlg-494c3",
+            storageBucket: "aztlg-494c3.firebasestorage.app",
+            messagingSenderId: "597051893949",
+            appId: "1:597051893949:web:de5554ac900317a92b2fd4"
+        };
+        firebase.initializeApp(firebaseConfig);
+        firebase.firestore().collection("student_results").orderBy("time", "desc").onSnapshot(snap => {
+            const tbody = document.querySelector("#tbl tbody");
+            tbody.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                const time = d.time ? d.time.toDate().toLocaleString('ar-SA') : '...';
+                tbody.innerHTML += `<tr>
+                    <td><b>${d.name}</b></td>
+                    <td><span class="tag">${d.model_name || 'غير معروف'}</span></td>
+                    <td style="color:green">${d.score} / ${d.total}</td>
+                    <td>${time}</td>
+                </tr>`;
+            });
+        });
+    </script>
+</body>
+</html>
