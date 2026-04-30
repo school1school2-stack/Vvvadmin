@@ -59,7 +59,7 @@
     <div class="header">
         <div>
             <h1 id="main-title">📊 منصة التحليل الذكي</h1>
-            <p id="sub-title" style="color: var(--text-sub); margin: 5px 0 0;">تحليل شامل لجميع أقسام اللفظي - أ/ عبدالعزيز الفيفي</p>
+            <p id="sub-title" style="color: var(--text-sub); margin: 5px 0 0;">تحليل شامل لجميع الأقسام - أ/ عبدالعزيز الفيفي</p>
         </div>
         <div class="action-buttons no-print" id="action-area">
             <button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>
@@ -148,20 +148,21 @@
             foundModels.add(d.model_id?.toString() || "15");
         });
         let buttonsHtml = `<button class="model-btn ${selectedModel === 'all' ? 'active' : ''}" onclick="handleSwitch('all')">🌍 عرض الكل</button>`;
-        Array.from(foundModels).sort((a,b)=>a-b).forEach(mId => {
-            buttonsHtml += `<button class="model-btn ${selectedModel === mId ? 'active' : ''}" onclick="handleSwitch('${mId}')">النموذج ${mId}</button>`;
+        Array.from(foundModels).sort().forEach(mId => {
+            buttonsHtml += `<button class="model-btn ${selectedModel === mId ? 'active' : ''}" onclick="handleSwitch('${mId}')">${mId}</button>`;
         });
         navBar.innerHTML = buttonsHtml;
     }
 
     function handleSwitch(modelId) {
         selectedModel = modelId;
-        document.getElementById('main-title').innerText = modelId === 'all' ? "📊 منصة التحليل الذكي" : `📊 تحليل النموذج (${modelId})`;
+        document.getElementById('main-title').innerText = modelId === 'all' ? "📊 منصة التحليل الذكي" : `📊 تحليل (${modelId})`;
         const actionArea = document.getElementById('action-area');
         if(modelId !== 'all') {
-            actionArea.innerHTML = `<button class="btn-share" onclick="generateShareLink('${modelId}')">🔗 مشاركة</button>
-                                    <button class="bulk-delete-btn" onclick="deleteEntireModel('${modelId}')">🗑️ تصفير</button>
-                                    <button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>`;
+            actionArea.innerHTML = `
+                <button class="btn-share" onclick="generateShareLink('${modelId}')">🔗 مشاركة</button>
+                <button class="bulk-delete-btn" onclick="deleteEntireModel('${modelId}')">🗑️ إلغاء النموذج نهائياً</button>
+                <button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>`;
         } else {
             actionArea.innerHTML = `<button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة التقرير</button>`;
         }
@@ -173,7 +174,6 @@
         currentUnsubscribe = db.collection("student_results").orderBy("time", "desc").onSnapshot(snapshot => {
             updateModelButtons(snapshot);
             let scores = [], rows = "", counts = { exc: 0, good: 0, bad: 0 };
-            // كائن لتجميع مهارات جميع الطلاب
             let skillsTotal = { tan: 0, ekm: 0, syq: 0, st: 0, mfr: 0, art: 0, ikh: 0, n: 0 };
 
             snapshot.forEach(doc => {
@@ -184,11 +184,7 @@
                     scores.push(p);
                     if(p >= 90) counts.exc++; else if(p >= 80) counts.good++; else counts.bad++;
 
-                    // تحليل الأقسام (إذا لم تكن البيانات موجودة نضع قيم افتراضية قريبة من مستوى الطالب)
-                    let s = d.sections || {
-                        tan: p-2, ekm: p+1, syq: p-5, st: p+3, mfr: p, art: p-1, ikh: p+2
-                    };
-
+                    let s = d.sections || { tan: p, ekm: p, syq: p, st: p, mfr: p, art: p, ikh: p };
                     Object.keys(s).forEach(k => { if(skillsTotal.hasOwnProperty(k)) skillsTotal[k] += s[k]; });
                     skillsTotal.n++;
 
@@ -203,37 +199,33 @@
             });
             document.getElementById('data-rows').innerHTML = rows;
             updateSummary(scores, counts);
-            
-            // حساب المتوسط لكل مهارة للرسم البياني
             let skillsAvg = ['tan','ekm','syq','st','mfr','art','ikh'].map(k => Math.round(skillsTotal[k]/skillsTotal.n) || 0);
             drawCharts(counts, skillsAvg);
         });
     }
 
+    async function deleteEntireModel(modelId) {
+        if(confirm(`هل أنت متأكد من حذف المسمى "${modelId}" وكافة بياناته؟ سيختفي الزر من الشريط العلوي فوراً.`)) {
+            const snap = await db.collection("student_results").where("model_id", "==", modelId).get();
+            const batch = db.batch();
+            snap.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            
+            // إعادة التوجيه لـ "عرض الكل" بعد الحذف ليختفي الزر
+            handleSwitch('all');
+            alert(`تم إلغاء النموذج ${modelId} بنجاح.`);
+        }
+    }
+
+    // بقية الدوال (الرسم البياني، المشاركة، الخ) كما هي لضمان عمل اللوحة
     function drawCharts(c, skills) {
         const ctx1 = document.getElementById('skillsChart').getContext('2d');
         if(chartA) chartA.destroy();
-        chartA = new Chart(ctx1, {
-            type: 'bar',
-            data: {
-                labels: ['تناظر', 'إكمال', 'سياقي', 'استيعاب', 'شاذة', 'ارتباط', 'اختلاف'],
-                datasets: [{ label: 'متوسط إتقان القسم (%)', data: skills, backgroundColor: '#0284c7', borderRadius: 5 }]
-            },
-            options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
-        });
-
+        chartA = new Chart(ctx1, { type: 'bar', data: { labels: ['تناظر', 'إكمال', 'سياقي', 'استيعاب', 'شاذة', 'ارتباط', 'اختلاف'], datasets: [{ label: 'متوسط الأداء', data: skills, backgroundColor: '#0284c7' }] }, options: { maintainAspectRatio: false } });
         const ctx2 = document.getElementById('levelsChart').getContext('2d');
         if(chartB) chartB.destroy();
-        chartB = new Chart(ctx2, {
-            type: 'doughnut',
-            data: {
-                labels: ['متميز', 'جيد جداً', 'دعم'],
-                datasets: [{ data: [c.exc, c.good, c.bad], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'] }]
-            },
-            options: { maintainAspectRatio: false }
-        });
+        chartB = new Chart(ctx2, { type: 'doughnut', data: { labels: ['متميز', 'جيد جداً', 'دعم'], datasets: [{ data: [c.exc, c.good, c.bad], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'] }] }, options: { maintainAspectRatio: false } });
     }
-
     function generateShareLink(modelId) {
         const shareUrl = `${window.location.href.split('?')[0]}?view=${modelId}`;
         document.getElementById('share-url').value = shareUrl;
@@ -241,23 +233,9 @@
         new QRCode(document.getElementById("qrcode"), { text: shareUrl, width: 150, height: 150 });
         document.getElementById('qr-modal').style.display = 'flex';
     }
-
-    function copyLink() {
-        const input = document.getElementById('share-url');
-        input.select();
-        document.execCommand("copy");
-        alert("تم نسخ الرابط");
-    }
+    function copyLink() { document.getElementById('share-url').select(); document.execCommand("copy"); alert("تم النسخ"); }
     function closeQR() { document.getElementById('qr-modal').style.display = 'none'; }
-    async function deleteDoc(id) { if(confirm("حذف؟")) await db.collection("student_results").doc(id).delete(); }
-    async function deleteEntireModel(modelId) {
-        if(confirm(`تصفير النموذج ${modelId}؟`)) {
-            const snap = await db.collection("student_results").where("model_id", "==", modelId).get();
-            const batch = db.batch();
-            snap.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
-        }
-    }
+    async function deleteDoc(id) { if(confirm("حذف الطالب؟")) await db.collection("student_results").doc(id).delete(); }
     function updateSummary(s, c) {
         document.getElementById('count').innerText = s.length;
         if(s.length > 0) {
