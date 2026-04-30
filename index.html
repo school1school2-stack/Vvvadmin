@@ -12,6 +12,7 @@
             --bg: #f8fafc; --card-bg: #ffffff; --accent: #0284c7;
             --gold: #b45309; --danger: #dc2626; --text-main: #1e293b;
             --text-sub: #64748b; --border: #e2e8f0;
+            --row-alt: #fffdec; /* لون أصفر خفيف جداً للصفوف */
         }
 
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 20px; }
@@ -40,6 +41,10 @@
         th { background: #f8fafc; padding: 15px; color: var(--text-sub); border-bottom: 2px solid var(--border); font-size: 0.85rem; }
         td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
         
+        /* تلوين الصفوف لسهولة القراءة */
+        tbody tr:nth-child(even) { background-color: var(--row-alt); }
+        tbody tr:hover { background-color: #f1f5f9; } /* تلوين عند تمرير الماوس */
+
         .prog-circle { width: 45px; height: 6px; background: #eee; border-radius: 10px; overflow: hidden; margin-top: 4px; }
         .prog-fill { height: 100%; }
 
