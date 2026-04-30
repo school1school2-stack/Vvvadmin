@@ -25,7 +25,6 @@
         .header h1 { margin: 0; color: var(--accent); font-size: 1.8rem; }
 
         .action-buttons { display: flex; gap: 10px; align-items: center; }
-        .btn-share { background: #0ea5e9; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; }
         
         .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .stat-card { background: var(--card-bg); padding: 20px; border-radius: 18px; text-align: center; border: 1px solid var(--border); }
@@ -42,8 +41,6 @@
         .prog-circle { width: 45px; height: 6px; background: #eee; border-radius: 10px; overflow: hidden; margin-top: 4px; }
         .prog-fill { height: 100%; }
 
-        #qr-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 30px; border-radius: 25px; text-align: center; max-width: 400px; width: 90%; }
         @media print { .no-print { display: none !important; } }
     </style>
 </head>
@@ -57,7 +54,7 @@
             <h1 id="main-title">📊 منصة التحليل الذكي</h1>
             <p style="color: var(--text-sub); margin: 5px 0 0;">متابعة دقيقة لمستويات الإخفاق والتميز - أ/ عبدالعزيز الفيفي</p>
         </div>
-        <div class="action-buttons no-print" id="action-area">
+        <div class="action-buttons no-print">
             <button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>
         </div>
     </div>
@@ -88,7 +85,7 @@
                     <th>ارتباط</th>
                     <th>اختلاف</th>
                     <th>النموذج</th>
-                    <th class="admin-only">إجراء</th>
+                    <th class="no-print">إجراء</th>
                 </tr>
             </thead>
             <tbody id="data-rows"></tbody>
@@ -97,7 +94,6 @@
 </div>
 
 <script>
-    // إعدادات Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyBkCO7FDQXd89YDf843J4_AtvEFvzzt-R0",
         authDomain: "aztlg-494c3.firebaseapp.com",
@@ -118,8 +114,6 @@
             updateModelButtons(snapshot);
             let scores = [], rows = "";
             let levels = { exc: 0, vgood: 0, good: 0, acc: 0, weak: 0 };
-            
-            // تهيئة مخزن لجمع درجات كل مهارة بشكل منفصل
             let skillsSums = { tan: 0, ekm: 0, syq: 0, st: 0, mfr: 0, art: 0, ikh: 0 };
             let studentCount = 0;
 
@@ -131,25 +125,17 @@
                     scores.push(p);
                     studentCount++;
 
-                    // تصنيف المستويات الخمسة
                     if(p >= 90) levels.exc++;
                     else if(p >= 80) levels.vgood++;
                     else if(p >= 70) levels.good++;
                     else if(p >= 60) levels.acc++;
                     else levels.weak++;
 
-                    // جلب تفاصيل الأقسام أو توليد تفاوت بسيط إذا لم تتوفر البيانات دقيقة (لغرض العرض)
                     let s = d.sections || { 
-                        tan: p, 
-                        ekm: Math.max(0, p-8), 
-                        syq: Math.min(100, p+5), 
-                        st: Math.max(0, p-12), 
-                        mfr: p, 
-                        art: Math.min(100, p+2), 
-                        ikh: Math.max(0, p-5) 
+                        tan: p, ekm: Math.max(0, p-5), syq: Math.min(100, p+3), 
+                        st: Math.max(0, p-10), mfr: p, art: Math.min(100, p+2), ikh: Math.max(0, p-4) 
                     };
                     
-                    // جمع الدرجات لحساب المتوسط الحقيقي للعمود
                     Object.keys(skillsSums).forEach(k => skillsSums[k] += s[k]);
 
                     rows += `<tr>
@@ -164,15 +150,12 @@
 
             document.getElementById('data-rows').innerHTML = rows;
             updateSummary(scores, levels);
-            
-            // حساب المتوسط الحقيقي لكل قسم لجعله يظهر "متفاوت" في الرسم البياني
             let avgSkills = ['tan','ekm','syq','st','mfr','art','ikh'].map(k => Math.round(skillsSums[k] / studentCount) || 0);
             drawCharts(levels, avgSkills);
         });
     }
 
     function drawCharts(lv, skills) {
-        // الرسم البياني للأقسام (الأعمدة الزرقاء المتفاوتة)
         const ctx1 = document.getElementById('skillsChart').getContext('2d');
         if(chartA) chartA.destroy();
         chartA = new Chart(ctx1, {
@@ -180,19 +163,19 @@
             data: {
                 labels: ['تناظر', 'إكمال', 'سياقي', 'استيعاب', 'شاذة', 'ارتباط', 'اختلاف'],
                 datasets: [{ 
-                    label: 'متوسط الأداء لكل مهارة', 
+                    label: 'متوسط الأداء', 
                     data: skills, 
-                    backgroundColor: '#0284c7', 
-                    borderRadius: 5 
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'],
+                    borderRadius: 8
                 }]
             },
             options: { 
                 maintainAspectRatio: false, 
-                scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } } 
+                scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
+                plugins: { legend: { display: false } }
             }
         });
 
-        // الرسم البياني للمستويات الخمسة
         const ctx2 = document.getElementById('levelsChart').getContext('2d');
         if(chartB) chartB.destroy();
         chartB = new Chart(ctx2, {
@@ -228,7 +211,7 @@
             document.getElementById('low').innerText = l.acc + l.weak;
         }
     }
-    async function deleteDoc(id) { if(confirm("حذف؟")) await db.collection("student_results").doc(id).delete(); }
+    async function deleteDoc(id) { if(confirm("حذف الطالب؟")) await db.collection("student_results").doc(id).delete(); }
 
     initListener('all');
 </script>
