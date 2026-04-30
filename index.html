@@ -25,7 +25,9 @@
         .header h1 { margin: 0; color: var(--accent); font-size: 1.8rem; }
 
         .action-buttons { display: flex; gap: 10px; align-items: center; }
-        
+        .btn-share { background: #0ea5e9; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .bulk-delete-btn { background: #fee2e2; color: var(--danger); border: 1px solid #fecaca; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+
         .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .stat-card { background: var(--card-bg); padding: 20px; border-radius: 18px; text-align: center; border: 1px solid var(--border); }
         .stat-card p { font-size: 1.8rem; font-weight: bold; color: var(--accent); margin: 10px 0 0; }
@@ -41,6 +43,11 @@
         .prog-circle { width: 45px; height: 6px; background: #eee; border-radius: 10px; overflow: hidden; margin-top: 4px; }
         .prog-fill { height: 100%; }
 
+        #qr-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 25px; text-align: center; max-width: 400px; width: 90%; }
+        #qrcode { display: flex; justify-content: center; margin: 20px 0; }
+        .close-btn { background: var(--text-main); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin-top: 10px; }
+
         @media print { .no-print { display: none !important; } }
     </style>
 </head>
@@ -52,9 +59,9 @@
     <div class="header">
         <div>
             <h1 id="main-title">📊 منصة التحليل الذكي</h1>
-            <p style="color: var(--text-sub); margin: 5px 0 0;">متابعة دقيقة لمستويات الإخفاق والتميز - أ/ عبدالعزيز الفيفي</p>
+            <p style="color: var(--text-sub); margin: 5px 0 0;">إدارة النتائج والتحليل البياني - أ/ عبدالعزيز الفيفي</p>
         </div>
-        <div class="action-buttons no-print">
+        <div class="action-buttons no-print" id="action-area">
             <button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>
         </div>
     </div>
@@ -90,6 +97,16 @@
             </thead>
             <tbody id="data-rows"></tbody>
         </table>
+    </div>
+</div>
+
+<div id="qr-modal">
+    <div class="modal-content">
+        <h3>مشاركة تقرير النموذج</h3>
+        <div id="qrcode"></div>
+        <input type="text" id="share-url" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; text-align: center;">
+        <button class="close-btn" onclick="copyLink()">نسخ الرابط</button>
+        <button class="close-btn" style="background:#666" onclick="closeQR()">إغلاق</button>
     </div>
 </div>
 
@@ -131,11 +148,7 @@
                     else if(p >= 60) levels.acc++;
                     else levels.weak++;
 
-                    let s = d.sections || { 
-                        tan: p, ekm: Math.max(0, p-5), syq: Math.min(100, p+3), 
-                        st: Math.max(0, p-10), mfr: p, art: Math.min(100, p+2), ikh: Math.max(0, p-4) 
-                    };
-                    
+                    let s = d.sections || { tan: p, ekm: p, syq: p, st: p, mfr: p, art: p, ikh: p };
                     Object.keys(skillsSums).forEach(k => skillsSums[k] += s[k]);
 
                     rows += `<tr>
@@ -169,11 +182,7 @@
                     borderRadius: 8
                 }]
             },
-            options: { 
-                maintainAspectRatio: false, 
-                scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
-                plugins: { legend: { display: false } }
-            }
+            options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
         });
 
         const ctx2 = document.getElementById('levelsChart').getContext('2d');
@@ -195,14 +204,51 @@
         const navBar = document.getElementById('nav-bar');
         const foundModels = new Set();
         snapshot.forEach(doc => foundModels.add(doc.data().model_id?.toString() || "15"));
-        let buttonsHtml = `<button class="model-btn ${selectedModel === 'all' ? 'active' : ''}" onclick="setMod('all')">🌍 عرض الكل</button>`;
+        let buttonsHtml = `<button class="model-btn ${selectedModel === 'all' ? 'active' : ''}" onclick="handleSwitch('all')">🌍 عرض الكل</button>`;
         Array.from(foundModels).sort().forEach(mId => {
-            buttonsHtml += `<button class="model-btn ${selectedModel === mId ? 'active' : ''}" onclick="setMod('${mId}')">${mId}</button>`;
+            buttonsHtml += `<button class="model-btn ${selectedModel === mId ? 'active' : ''}" onclick="handleSwitch('${mId}')">${mId}</button>`;
         });
         navBar.innerHTML = buttonsHtml;
     }
 
-    function setMod(m) { selectedModel = m; initListener(m); }
+    function handleSwitch(modelId) {
+        selectedModel = modelId;
+        const actionArea = document.getElementById('action-area');
+        
+        if (modelId === 'all') {
+            document.getElementById('main-title').innerText = "📊 منصة التحليل الذكي";
+            actionArea.innerHTML = `<button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة التقرير</button>`;
+        } else {
+            document.getElementById('main-title').innerText = `📊 تحليل نموذج (${modelId})`;
+            actionArea.innerHTML = `
+                <button class="btn-share" onclick="generateShareLink('${modelId}')">🔗 مشاركة</button>
+                <button class="bulk-delete-btn" onclick="deleteEntireModel('${modelId}')">🗑️ تصفير النموذج</button>
+                <button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>`;
+        }
+        initListener(modelId);
+    }
+
+    async function deleteEntireModel(modelId) {
+        if(confirm(`هل أنت متأكد من حذف جميع نتائج النموذج رقم (${modelId})؟ لا يمكن التراجع عن هذا الإجراء.`)) {
+            const snap = await db.collection("student_results").where("model_id", "==", modelId).get();
+            const batch = db.batch();
+            snap.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            alert("تم تصفير النموذج بنجاح.");
+            handleSwitch('all');
+        }
+    }
+
+    function generateShareLink(modelId) {
+        const shareUrl = `${window.location.href.split('?')[0]}?view=${modelId}`;
+        document.getElementById('share-url').value = shareUrl;
+        document.getElementById('qrcode').innerHTML = "";
+        new QRCode(document.getElementById("qrcode"), { text: shareUrl, width: 150, height: 150 });
+        document.getElementById('qr-modal').style.display = 'flex';
+    }
+
+    function copyLink() { document.getElementById('share-url').select(); document.execCommand("copy"); alert("تم نسخ رابط المشاركة"); }
+    function closeQR() { document.getElementById('qr-modal').style.display = 'none'; }
     function updateSummary(s, l) {
         document.getElementById('count').innerText = s.length;
         if(s.length > 0) {
@@ -211,7 +257,7 @@
             document.getElementById('low').innerText = l.acc + l.weak;
         }
     }
-    async function deleteDoc(id) { if(confirm("حذف الطالب؟")) await db.collection("student_results").doc(id).delete(); }
+    async function deleteDoc(id) { if(confirm("حذف سجل هذا الطالب؟")) await db.collection("student_results").doc(id).delete(); }
 
     initListener('all');
 </script>
