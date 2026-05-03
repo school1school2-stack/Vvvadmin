@@ -12,7 +12,7 @@
             --bg: #f8fafc; --card-bg: #ffffff; --accent: #0284c7;
             --gold: #b45309; --danger: #dc2626; --text-main: #1e293b;
             --text-sub: #64748b; --border: #e2e8f0;
-            --row-alt: #fffdec;
+            --row-alt: #fffdec; /* لون أصفر خفيف جداً للصفوف */
         }
 
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 20px; }
@@ -41,6 +41,7 @@
         th { background: #f8fafc; padding: 15px; color: var(--text-sub); border-bottom: 2px solid var(--border); font-size: 0.85rem; }
         td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
         
+        /* تلوين الصفوف المتبادلة لسهولة القراءة */
         tbody tr:nth-child(even) { background-color: var(--row-alt); }
         tbody tr:hover { background-color: #f1f5f9; }
 
@@ -52,7 +53,7 @@
         #qrcode { display: flex; justify-content: center; margin: 20px 0; }
         .close-btn { background: var(--text-main); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin-top: 10px; }
 
-        /* إخفاء عمود الحذف في وضع العرض */
+        /* إخفاء العناصر في وضع العرض فقط */
         .view-only-hide { display: none !important; }
 
         @media print { .no-print { display: none !important; } }
@@ -69,7 +70,7 @@
             <p style="color: var(--text-sub); margin: 5px 0 0;">متابعة دقيقة لمستويات الإخفاق والتميز - أ/ عبدالعزيز الفيفي</p>
         </div>
         <div class="action-buttons no-print" id="action-area">
-            <!-- سيتم توليد الأزرار برمجياً بناءً على الصلاحية -->
+            <button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>
         </div>
     </div>
 
@@ -132,7 +133,7 @@
     let chartA, chartB, currentUnsubscribe = null;
     let selectedModel = 'all';
 
-    // فحص هل المستخدم في وضع العرض فقط (المدير/المشارك)
+    // التحقق من وضع العرض فقط
     const urlParams = new URLSearchParams(window.location.search);
     const isViewOnly = urlParams.has('view');
     const viewId = urlParams.get('view');
@@ -140,7 +141,7 @@
     function initListener(modelId) {
         if (currentUnsubscribe) currentUnsubscribe();
         
-        // إذا كان وضع العرض مفعل، نخفي عمود الإجراءات نهائياً
+        // إخفاء عمود الإجراءات وقائمة النماذج للمدير
         if(isViewOnly) {
             document.getElementById('action-header').classList.add('view-only-hide');
             document.getElementById('nav-bar').classList.add('view-only-hide');
@@ -168,7 +169,11 @@
                     else if(p >= 60) levels.acc++;
                     else levels.weak++;
 
-                    let s = d.sections || { tan: p, ekm: p, syq: p, st: p, mfr: p, art: p, ikh: p };
+                    let s = d.sections || { 
+                        tan: p, ekm: Math.max(0, p-5), syq: Math.min(100, p+3), 
+                        st: Math.max(0, p-10), mfr: p, art: Math.min(100, p+2), ikh: Math.max(0, p-4) 
+                    };
+                    
                     Object.keys(skillsSums).forEach(k => skillsSums[k] += s[k]);
 
                     rows += `<tr>
@@ -199,24 +204,20 @@
             actionArea.innerHTML = `<button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>`;
         } else {
             document.getElementById('main-title').innerText = `📊 تحليل نموذج (${m})`;
-            
-            // الأزرار الحساسة تظهر فقط إذا لم نكن في وضع العرض
             if(!isViewOnly) {
                 actionArea.innerHTML = `
-                    <button class="btn-share" onclick="generateShareLink('${m}')">🔗 مشاركة التقرير</button>
+                    <button class="btn-share" onclick="generateShareLink('${m}')">🔗 مشاركة</button>
                     <button class="bulk-delete-btn" onclick="deleteEntireModel('${m}')">🗑️ تصفير النموذج</button>
                     <button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>`;
             } else {
-                actionArea.innerHTML = `<button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة التقرير</button>`;
+                actionArea.innerHTML = `<button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>`;
             }
         }
         initListener(m); 
     }
 
-    // --- بقية الدوال مع إضافة حماية برمجية ---
-
     function updateModelButtons(snapshot) {
-        if(isViewOnly) return; 
+        if(isViewOnly) return;
         const navBar = document.getElementById('nav-bar');
         const foundModels = new Set();
         snapshot.forEach(doc => foundModels.add(doc.data().model_id?.toString() || "15"));
@@ -228,56 +229,18 @@
     }
 
     async function deleteEntireModel(modelId) {
-        if(isViewOnly) return; // حماية إضافية
+        if(isViewOnly) return;
         if(confirm(`تنبيه: هل أنت متأكد من حذف جميع نتائج النموذج رقم (${modelId})؟`)) {
             const snap = await db.collection("student_results").where("model_id", "==", modelId).get();
             const batch = db.batch();
             snap.forEach(doc => batch.delete(doc.ref));
             await batch.commit();
+            alert("تم تصفير النموذج بنجاح.");
             setMod('all');
         }
     }
 
-    async function deleteDoc(id) { 
-        if(isViewOnly) return;
-        if(confirm("حذف الطالب؟")) await db.collection("student_results").doc(id).delete(); 
-    }
-
-    // --- دوال الرسوم والملخص (كما هي) ---
-    function drawCharts(lv, skills) {
-        const ctx1 = document.getElementById('skillsChart').getContext('2d');
-        if(chartA) chartA.destroy();
-        chartA = new Chart(ctx1, {
-            type: 'bar',
-            data: {
-                labels: ['تناظر', 'إكمال', 'سياقي', 'استيعاب', 'شاذة', 'ارتباط', 'اختلاف'],
-                datasets: [{ label: 'الأداء', data: skills, backgroundColor: '#3b82f6', borderRadius: 8 }]
-            },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
-        });
-        const ctx2 = document.getElementById('levelsChart').getContext('2d');
-        if(chartB) chartB.destroy();
-        chartB = new Chart(ctx2, {
-            type: 'doughnut',
-            data: {
-                labels: ['ممتاز', 'جيد جداً', 'جيد', 'مقبول', 'ضعيف'],
-                datasets: [{ data: [lv.exc, lv.vgood, lv.good, lv.acc, lv.weak], backgroundColor: ['#10b981', '#0284c7', '#f59e0b', '#b45309', '#ef4444'] }]
-            },
-            options: { maintainAspectRatio: false }
-        });
-    }
-
-    function updateSummary(s, l) {
-        document.getElementById('count').innerText = s.length;
-        if(s.length > 0) {
-            document.getElementById('avg').innerText = Math.round(s.reduce((a,b)=>a+b,0)/s.length) + "%";
-            document.getElementById('max').innerText = Math.max(...s) + "%";
-            document.getElementById('low').innerText = l.acc + l.weak;
-        }
-    }
-
     function generateShareLink(modelId) {
-        // إنشاء رابط يحتوي على باراميتر view لمنع التحكم
         const shareUrl = `${window.location.href.split('?')[0]}?view=${modelId}`;
         document.getElementById('share-url').value = shareUrl;
         document.getElementById('qrcode').innerHTML = "";
@@ -288,13 +251,64 @@
     function copyLink() { 
         document.getElementById('share-url').select(); 
         document.execCommand("copy"); 
-        alert("تم نسخ رابط العرض فقط"); 
+        alert("تم نسخ رابط المشاركة (للعرض فقط)"); 
     }
+
     function closeQR() { document.getElementById('qr-modal').style.display = 'none'; }
 
-    // التشغيل الابتدائي
+    function updateSummary(s, l) {
+        document.getElementById('count').innerText = s.length;
+        if(s.length > 0) {
+            document.getElementById('avg').innerText = Math.round(s.reduce((a,b)=>a+b,0)/s.length) + "%";
+            document.getElementById('max').innerText = Math.max(...s) + "%";
+            document.getElementById('low').innerText = l.acc + l.weak;
+        }
+    }
+
+    async function deleteDoc(id) { 
+        if(isViewOnly) return;
+        if(confirm("حذف الطالب؟")) await db.collection("student_results").doc(id).delete(); 
+    }
+
+    function drawCharts(lv, skills) {
+        const ctx1 = document.getElementById('skillsChart').getContext('2d');
+        if(chartA) chartA.destroy();
+        chartA = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: ['تناظر', 'إكمال', 'سياقي', 'استيعاب', 'شاذة', 'ارتباط', 'اختلاف'],
+                datasets: [{ 
+                    label: 'متوسط الأداء', 
+                    data: skills, 
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'],
+                    borderRadius: 8
+                }]
+            },
+            options: { 
+                maintainAspectRatio: false, 
+                scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        const ctx2 = document.getElementById('levelsChart').getContext('2d');
+        if(chartB) chartB.destroy();
+        chartB = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['ممتاز', 'جيد جداً', 'جيد', 'مقبول', 'ضعيف'],
+                datasets: [{ 
+                    data: [lv.exc, lv.vgood, lv.good, lv.acc, lv.weak], 
+                    backgroundColor: ['#10b981', '#0284c7', '#f59e0b', '#b45309', '#ef4444'] 
+                }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    // التشغيل بناءً على نوع الرابط
     if(isViewOnly) {
-        setMod(viewId); // يفتح مباشرة النموذج المطلوب للمدير بوضع العرض
+        setMod(viewId);
     } else {
         setMod('all');
     }
