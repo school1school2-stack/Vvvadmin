@@ -5,64 +5,43 @@
     <title>لوحة المتابعة الذكية | أ / عبدالعزيز الفيفي</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg: #f8fafc; --card-bg: #ffffff; --maroon: #800000;
-            --text-main: #1e293b; --text-sub: #64748b; --border: #e2e8f0;
-            --row-alt: #fffdec;
+            --bg: #f4f7f6; --maroon: #800000; --gold: #d4af37;
+            --white: #ffffff; --text: #2c3e50; --border: #dcdde1;
         }
-
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 20px; }
-        .dashboard { max-width: 1500px; margin: auto; }
-        
-        .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 25px; border-radius: 20px; margin-bottom: 25px; border-bottom: 5px solid var(--maroon); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .header h1 { margin: 0; color: var(--maroon); font-size: 1.8rem; }
-
-        .model-nav { display: flex; gap: 10px; margin-bottom: 25px; padding: 10px; background: white; border-radius: 15px; overflow-x: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .model-btn { background: #f1f5f9; border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; white-space: nowrap; }
-        .model-btn.active { background: var(--maroon); color: white; }
-
-        .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
-        .stat-card { background: white; padding: 20px; border-radius: 18px; text-align: center; border: 1px solid var(--border); }
-        .stat-card p { font-size: 1.8rem; font-weight: bold; color: var(--maroon); margin: 10px 0 0; }
-
-        .table-box { background: white; border-radius: 20px; overflow-x: auto; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; text-align: right; min-width: 1000px; }
-        th { background: #f8fafc; padding: 15px; color: var(--text-sub); border-bottom: 2px solid var(--border); }
-        td { padding: 12px; border-bottom: 1px solid var(--border); }
-        tbody tr:nth-child(even) { background-color: var(--row-alt); }
-        
-        .email-text { font-family: monospace; font-size: 0.85rem; color: #0284c7; }
-        .btn-delete { color: #dc2626; border: none; background: none; cursor: pointer; font-weight: bold; }
-        
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 1400px; margin: auto; }
+        .header { background: var(--maroon); color: var(--gold); padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .nav-bar { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding: 10px 0; }
+        .nav-btn { background: var(--white); border: 2px solid var(--maroon); padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; white-space: nowrap; transition: 0.3s; }
+        .nav-btn.active { background: var(--maroon); color: var(--gold); }
+        .table-wrapper { background: var(--white); border-radius: 15px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; text-align: right; }
+        th { background: #f8f9fa; padding: 15px; border-bottom: 3px solid var(--gold); color: var(--maroon); }
+        td { padding: 15px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) { background: #fffdf5; }
+        .email-link { color: #0984e3; font-family: monospace; font-size: 0.9rem; }
+        .class-badge { background: #eee; padding: 4px 8px; border-radius: 5px; font-weight: bold; }
+        .delete-btn { color: #d63031; cursor: pointer; border: none; background: none; font-weight: bold; }
         @media print { .no-print { display: none !important; } }
     </style>
 </head>
 <body>
 
-<div class="dashboard">
+<div class="container">
     <div class="header">
-        <div>
-            <h1>📊 لوحة متابعة النتائج</h1>
-            <p style="color: var(--text-sub); margin-top: 5px;">أ / عبدالعزيز بن موسى الفيفي</p>
-        </div>
-        <button class="model-btn no-print" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة التقارير</button>
+        <h1>📊 لوحة متابعة النتائج - المحاكي</h1>
+        <p>أ / عبدالعزيز بن موسى الفيفي</p>
     </div>
 
-    <div id="nav-bar" class="model-nav no-print"></div>
+    <div id="model-nav" class="nav-bar no-print"></div>
 
-    <div class="stats-container">
-        <div class="stat-card"><h3>إجمالي الطلاب</h3><p id="count">0</p></div>
-        <div class="stat-card"><h3>متوسط الدرجات</h3><p id="avg">0</p></div>
-        <div class="stat-card"><h3>أعلى درجة</h3><p id="max">0</p></div>
-    </div>
-
-    <div class="table-box">
+    <div class="table-wrapper">
         <table>
             <thead>
                 <tr>
-                    <th>اسم الطالب</th>
+                    <th>الاسم</th>
                     <th>البريد الإلكتروني</th>
                     <th>الصف / الفصل</th>
                     <th>الدرجة</th>
@@ -70,13 +49,12 @@
                     <th class="no-print">إجراء</th>
                 </tr>
             </thead>
-            <tbody id="data-rows"></tbody>
+            <tbody id="results-table"></tbody>
         </table>
     </div>
 </div>
 
 <script>
-    // إعدادات Firebase الخاصة بك
     const firebaseConfig = {
         apiKey: "AIzaSyBkCO7FDQXd89YDf843J4_AtvEFvzzt-R0",
         authDomain: "aztlg-494c3.firebaseapp.com",
@@ -88,79 +66,70 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let selectedModel = 'all';
+    let currentFilter = 'all';
 
-    function initListener(modelId) {
+    function listenToData(filter) {
         db.collection("student_results").orderBy("time", "desc").onSnapshot(snapshot => {
-            updateModelButtons(snapshot);
-            
+            const models = new Set();
             let rows = "";
-            let scores = [];
-            let count = 0;
 
             snapshot.forEach(doc => {
-                const d = doc.data();
-                if (modelId === 'all' || d.model_id === modelId) {
-                    count++;
-                    scores.push(d.score);
-                    
-                    // هنا التعديل الجوهري لقراءة الحقول الجديدة مباشرة
-                    let emailValue = d.email || "---";
-                    let classValue = d.student_class || "---";
-                    let nameValue = d.name || "---";
+                const data = doc.data();
+                if (data.model_id) models.add(data.model_id);
 
-                    // إذا كان الاسم يحتوي على تاريخ مدمج، نقوم بتنظيفه للعرض فقط
-                    let displayName = nameValue.split('(')[0].trim();
+                if (filter === 'all' || data.model_id === filter) {
+                    // --- فك شفرة البيانات بذكاء ---
+                    // أولاً: جرب الحقول المستقلة
+                    let name = data.name ? data.name.split('(')[0].trim() : "غير معروف";
+                    let email = data.email || "---";
+                    let studentClass = data.student_class || "---";
 
-                    rows += `<tr>
-                        <td><strong>${displayName}</strong></td>
-                        <td class="email-text">${emailValue}</td>
-                        <td style="font-weight:bold">${classValue}</td>
-                        <td style="font-weight:bold; color:var(--maroon)">${d.score} / ${d.total}</td>
-                        <td>${d.model_id}</td>
-                        <td class="no-print">
-                            <button class="btn-delete" onclick="deleteDoc('${doc.id}')">حذف</button>
-                        </td>
-                    </tr>`;
+                    // ثانياً: إذا كان الإيميل فارغاً، ابحث عنه داخل حقل الاسم (للتوافق مع التجارب السابقة)
+                    if (email === "---" && data.name && data.name.includes('|')) {
+                        let parts = data.name.split('|');
+                        name = parts[0].trim();
+                        email = parts[1] ? parts[1].trim() : "---";
+                        studentClass = parts[2] ? parts[2].split('(')[0].trim() : "---";
+                    }
+
+                    rows += `
+                        <tr>
+                            <td><strong>${name}</strong></td>
+                            <td class="email-link">${email}</td>
+                            <td><span class="class-badge">${studentClass}</span></td>
+                            <td style="color:var(--maroon); font-weight:bold">${data.score} / ${data.total}</td>
+                            <td>${data.model_id}</td>
+                            <td class="no-print">
+                                <button class="delete-btn" onclick="deleteEntry('${doc.id}')">حذف</button>
+                            </td>
+                        </tr>`;
                 }
             });
 
-            document.getElementById('data-rows').innerHTML = rows;
-            document.getElementById('count').innerText = count;
-            if(scores.length > 0) {
-                document.getElementById('max').innerText = Math.max(...scores);
-                const sum = scores.reduce((a, b) => a + b, 0);
-                document.getElementById('avg').innerText = (sum / scores.length).toFixed(1);
-            }
+            document.getElementById('results-table').innerHTML = rows;
+            renderNav(models);
         });
     }
 
-    function updateModelButtons(snapshot) {
-        const navBar = document.getElementById('nav-bar');
-        const models = new Set();
-        snapshot.forEach(doc => {
-            if(doc.data().model_id) models.add(doc.data().model_id);
-        });
-        
-        let html = `<button class="model-btn ${selectedModel === 'all' ? 'active' : ''}" onclick="changeModel('all')">الكل</button>`;
+    function renderNav(models) {
+        let navHtml = `<button class="nav-btn ${currentFilter === 'all' ? 'active' : ''}" onclick="filterBy('all')">الكل</button>`;
         Array.from(models).sort().forEach(m => {
-            html += `<button class="model-btn ${selectedModel === m ? 'active' : ''}" onclick="changeModel('${m}')">${m}</button>`;
+            navHtml += `<button class="nav-btn ${currentFilter === m ? 'active' : ''}" onclick="filterBy('${m}')">${m}</button>`;
         });
-        navBar.innerHTML = html;
+        document.getElementById('model-nav').innerHTML = navHtml;
     }
 
-    function changeModel(m) {
-        selectedModel = m;
-        initListener(m);
+    function filterBy(m) {
+        currentFilter = m;
+        listenToData(m);
     }
 
-    async function deleteDoc(id) {
-        if(confirm("هل تريد حذف هذه النتيجة نهائياً؟")) {
-            await db.collection("student_results").doc(id).delete();
-        }
+    async function deleteEntry(id) {
+        if (confirm("حذف هذه النتيجة؟")) await db.collection("student_results").doc(id).delete();
     }
 
-    initListener('all');
+    // التشغيل
+    listenToData('all');
 </script>
 </body>
 </html>
