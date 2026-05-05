@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>لوحة التحليل الذكي | أ / عبدالعزيز الفيفي</title>
+    <title>لوحة القيادة الذكية | تقارير أ/ عبدالعزيز الفيفي</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -11,7 +11,8 @@
         :root {
             --bg: #f8fafc; --card-bg: #ffffff; --accent: #0284c7;
             --gold: #b45309; --danger: #dc2626; --text-main: #1e293b;
-            --text-sub: #64748b; --border: #e2e8f0; --row-alt: #fffdec;
+            --text-sub: #64748b; --border: #e2e8f0;
+            --row-alt: #fffdec; /* لون أصفر خفيف جداً للصفوف */
         }
 
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 20px; }
@@ -39,6 +40,8 @@
         table { width: 100%; border-collapse: collapse; text-align: right; min-width: 1000px; }
         th { background: #f8fafc; padding: 15px; color: var(--text-sub); border-bottom: 2px solid var(--border); font-size: 0.85rem; }
         td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        
+        /* تلوين الصفوف المتبادلة لسهولة القراءة */
         tbody tr:nth-child(even) { background-color: var(--row-alt); }
         tbody tr:hover { background-color: #f1f5f9; }
 
@@ -50,7 +53,9 @@
         #qrcode { display: flex; justify-content: center; margin: 20px 0; }
         .close-btn { background: var(--text-main); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin-top: 10px; }
 
+        /* إخفاء العناصر في وضع العرض فقط */
         .view-only-hide { display: none !important; }
+
         @media print { .no-print { display: none !important; } }
     </style>
 </head>
@@ -62,7 +67,7 @@
     <div class="header">
         <div>
             <h1 id="main-title">📊 منصة التحليل الذكي</h1>
-            <p style="color: var(--text-sub); margin: 5px 0 0;">متابعة دقيقة لمستويات الإخفاق والتميز - أ / عبدالعزيز بن موسى الفيفي</p>
+            <p style="color: var(--text-sub); margin: 5px 0 0;">متابعة دقيقة لمستويات الإخفاق والتميز - أ/ عبدالعزيز الفيفي</p>
         </div>
         <div class="action-buttons no-print" id="action-area">
             <button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>
@@ -70,7 +75,7 @@
     </div>
 
     <div class="stats-container">
-        <div class="stat-card"><h3>المختبرون</h3><p id="count">0</p></div>
+        <div class="stat-card"><h3>المختبرين</h3><p id="count">0</p></div>
         <div class="stat-card"><h3>متوسط الأداء</h3><p id="avg">0%</p></div>
         <div class="stat-card"><h3>أعلى نتيجة</h3><p id="max">0%</p></div>
         <div class="stat-card"><h3>دون المتوسط</h3><p id="low">0</p></div>
@@ -128,12 +133,15 @@
     let chartA, chartB, currentUnsubscribe = null;
     let selectedModel = 'all';
 
+    // التحقق من وضع العرض فقط
     const urlParams = new URLSearchParams(window.location.search);
     const isViewOnly = urlParams.has('view');
     const viewId = urlParams.get('view');
 
     function initListener(modelId) {
         if (currentUnsubscribe) currentUnsubscribe();
+        
+        // إخفاء عمود الإجراءات وقائمة النماذج للمدير
         if(isViewOnly) {
             document.getElementById('action-header').classList.add('view-only-hide');
             document.getElementById('nav-bar').classList.add('view-only-hide');
@@ -149,7 +157,7 @@
 
             snapshot.forEach(doc => {
                 const d = doc.data();
-                let actualModel = d.model_id || '---';
+                let actualModel = d.model_id || '15';
                 if (modelId === 'all' || actualModel == modelId) {
                     const p = Math.round((d.score / d.total) * 100);
                     scores.push(p);
@@ -165,6 +173,7 @@
                         tan: p, ekm: Math.max(0, p-5), syq: Math.min(100, p+3), 
                         st: Math.max(0, p-10), mfr: p, art: Math.min(100, p+2), ikh: Math.max(0, p-4) 
                     };
+                    
                     Object.keys(skillsSums).forEach(k => skillsSums[k] += s[k]);
 
                     rows += `<tr>
@@ -173,7 +182,7 @@
                         ${['tan','ekm','syq','st','mfr','art','ikh'].map(k => `<td>${s[k]}%<div class="prog-circle"><div class="prog-fill" style="width:${s[k]}%; background:${s[k]<60?'#ef4444':s[k]<80?'#f59e0b':'#10b981'}"></div></div></td>`).join('')}
                         <td>${actualModel}</td>
                         <td class="no-print ${isViewOnly ? 'view-only-hide' : ''}">
-                            <button style="color:red;border:none;background:none;cursor:pointer;font-weight:bold" onclick="deleteDoc('${doc.id}')">حذف</button>
+                            <button style="color:red;border:none;background:none;cursor:pointer" onclick="deleteDoc('${doc.id}')">حذف</button>
                         </td>
                     </tr>`;
                 }
@@ -187,7 +196,7 @@
     }
 
     function setMod(m) { 
-        selectedModel = m;
+        selectedModel = m; 
         const actionArea = document.getElementById('action-area');
         
         if (m === 'all') {
@@ -204,15 +213,14 @@
                 actionArea.innerHTML = `<button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>`;
             }
         }
-        initListener(m);
+        initListener(m); 
     }
 
     function updateModelButtons(snapshot) {
         if(isViewOnly) return;
         const navBar = document.getElementById('nav-bar');
         const foundModels = new Set();
-        snapshot.forEach(doc => { if(doc.data().model_id) foundModels.add(doc.data().model_id.toString()); });
-        
+        snapshot.forEach(doc => foundModels.add(doc.data().model_id?.toString() || "15"));
         let buttonsHtml = `<button class="model-btn ${selectedModel === 'all' ? 'active' : ''}" onclick="setMod('all')">🌍 عرض الكل</button>`;
         Array.from(foundModels).sort().forEach(mId => {
             buttonsHtml += `<button class="model-btn ${selectedModel === mId ? 'active' : ''}" onclick="setMod('${mId}')">${mId}</button>`;
@@ -242,7 +250,7 @@
 
     function copyLink() { 
         document.getElementById('share-url').select(); 
-        document.execCommand("copy");
+        document.execCommand("copy"); 
         alert("تم نسخ رابط المشاركة (للعرض فقط)"); 
     }
 
@@ -298,7 +306,12 @@
         });
     }
 
-    if(isViewOnly) { setMod(viewId); } else { setMod('all'); }
+    // التشغيل بناءً على نوع الرابط
+    if(isViewOnly) {
+        setMod(viewId);
+    } else {
+        setMod('all');
+    }
 </script>
 </body>
 </html>
