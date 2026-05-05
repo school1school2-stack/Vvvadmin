@@ -2,73 +2,118 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تحدي اليوم - أ/ عبدالعزيز الفيفي</title>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <title>لوحة القيادة الذكية | تقارير أ / عبدالعزيز بن موسى الفيفي</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --primary: #1a237e; --secondary: #311b92; --bg: #f8f9fa; --accent: #f57c00; --correct: #1b5e20; --wrong: #b71c1c; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .quiz-container { background: white; padding: 2.5rem; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); width: 95%; max-width: 700px; text-align: center; position: relative; border-top: 8px solid var(--primary); }
-        #timer-bar { position: absolute; top: 0; right: 0; height: 8px; background: var(--accent); width: 100%; transition: width 1s linear; border-radius: 20px 20px 0 0; }
-        .option-btn { display: block; width: 100%; padding: 14px; margin: 12px 0; border: 2px solid #e0e0e0; border-radius: 10px; background: #fff; cursor: pointer; transition: all 0.3s ease; font-size: 1.15rem; font-weight: 500; color: #333; }
-        .option-btn:hover { border-color: var(--secondary); background-color: #f3e5f5; }
-        .correct-flash { background-color: #e8f5e9 !important; border-color: var(--correct) !important; color: var(--correct); border-width: 3px !important; box-shadow: 0 0 10px rgba(27,94,32,0.2); }
-        .wrong-flash { background-color: #ffebee !important; border-color: var(--wrong) !important; color: var(--wrong); }
-        .hidden { display: none; }
-        .reading-text { background: #fffde7; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: right; font-size: 1.05rem; border-right: 6px solid var(--accent); line-height: 1.8; color: #444; }
-        input[type="text"] { width: 85%; padding: 15px; margin-bottom: 15px; border-radius: 10px; border: 2px solid #ddd; font-size: 1.1rem; text-align: center; outline: none; }
-        .btn-start { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 15px 40px; border: none; border-radius: 12px; cursor: pointer; font-size: 1.2rem; font-weight: bold; transition: transform 0.2s; }
-        .btn-start:hover { transform: scale(1.05); }
-        #feedback { margin-top: 20px; font-weight: bold; font-size: 1.2rem; min-height: 1.6em; }
-        #timer-text { font-weight: bold; color: var(--wrong); margin-bottom: 15px; font-size: 1.1rem; }
-        .copyright { font-size: 0.9rem; color: #777; margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px; }
-        .normal-text { color: #555; font-weight: normal; }
-        .date-badge { background: #eee; color: var(--wrong); padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; margin-bottom: 15px; display: inline-block; }
+        :root {
+            --bg: #f8fafc; --card-bg: #ffffff; --accent: #0284c7;
+            --gold: #b45309; --danger: #dc2626; --text-main: #1e293b;
+            --text-sub: #64748b; --border: #e2e8f0;
+            --row-alt: #fffdec; 
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 20px; }
+        .dashboard { max-width: 1400px; margin: auto; }
+
+        .model-nav { display: flex; gap: 10px; margin-bottom: 25px; padding: 10px; background: var(--card-bg); border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-x: auto; }
+        .model-btn { background: #f1f5f9; border: 1px solid var(--border); padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; white-space: nowrap; }
+        .model-btn.active { background: var(--accent); color: white; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 30px; border-radius: 20px; margin-bottom: 30px; border-bottom: 5px solid var(--accent); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .header h1 { margin: 0; color: var(--accent); font-size: 1.8rem; }
+
+        .action-buttons { display: flex; gap: 10px; align-items: center; }
+        .btn-share { background: #0ea5e9; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .bulk-delete-btn { background: #fee2e2; color: var(--danger); border: 1px solid #fecaca; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+
+        .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: var(--card-bg); padding: 20px; border-radius: 18px; text-align: center; border: 1px solid var(--border); }
+        .stat-card p { font-size: 1.8rem; font-weight: bold; color: var(--accent); margin: 10px 0 0; }
+
+        .main-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 25px; margin-bottom: 30px; }
+        .chart-wrapper { background: var(--card-bg); padding: 25px; border-radius: 20px; border: 1px solid var(--border); height: 420px; }
+
+        .table-box { background: var(--card-bg); border-radius: 20px; overflow-x: auto; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; text-align: right; min-width: 1100px; }
+        th { background: #f8fafc; padding: 15px; color: var(--text-sub); border-bottom: 2px solid var(--border); font-size: 0.85rem; }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        
+        tbody tr:nth-child(even) { background-color: var(--row-alt); }
+        tbody tr:hover { background-color: #f1f5f9; }
+
+        .prog-circle { width: 45px; height: 6px; background: #eee; border-radius: 10px; overflow: hidden; margin-top: 4px; }
+        .prog-fill { height: 100%; }
+
+        #qr-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 25px; text-align: center; max-width: 400px; width: 90%; }
+        #qrcode { display: flex; justify-content: center; margin: 20px 0; }
+        .close-btn { background: var(--text-main); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin-top: 10px; }
+
+        .view-only-hide { display: none !important; }
+
+        @media print { .no-print { display: none !important; } }
     </style>
 </head>
-<body onload="updateDateTime()">
+<body>
 
-<div class="quiz-container">
-    <div id="timer-bar"></div>
-    
-    <div id="login-section">
-        <h1 style="color: var(--primary); margin-bottom: 10px;">تحدي اليوم</h1>
-        <div id="date-display" class="date-badge">جاري التحميل...</div>
-        <div class="reading-text" style="text-align: center; border: none; background: #e8eaf6;">
-            "ليس هناك تحدٍ أكبر من تطوير ذاتك"
+<div class="dashboard">
+    <div class="model-nav no-print" id="nav-bar"></div>
+
+    <div class="header">
+        <div>
+            <h1 id="main-title">📊 منصة التحليل الذكي</h1>
+            <p style="color: var(--text-sub); margin: 5px 0 0;">متابعة دقيقة لمستويات الإخفاق والتميز - أ / عبدالعزيز بن موسى الفيفي</p>
         </div>
-        <input type="text" id="student-name" placeholder="الاسم الثلاثي...">
-        <div style="display: flex; gap: 10px; justify-content: center; width: 90%; margin: 0 auto;">
-            <input type="text" id="student-grade" placeholder="الصف (مثلاً: 2)" style="width: 45%;">
-            <input type="text" id="student-class" placeholder="الفصل (مثلاً: 3)" style="width: 45%;">
+        <div class="action-buttons no-print" id="action-area">
+            <button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>
         </div>
-        <br>
-        <button class="btn-start" onclick="startQuiz()">ابدأ التحدي 🚀</button>
-        <div class="copyright">أ/ <span class="normal-text">عبدالعزيز الفيفي</span> - <span class="normal-text">ثانوية الأمير عبدالمجيد 🎓</span></div>
     </div>
 
-    <div id="quiz-section" class="hidden">
-        <div id="timer-text">⏳ المتبقي: 40 ثانية</div>
-        <h3 id="question-title" style="color: var(--secondary); margin-bottom: 10px; font-size: 1.3rem;"></h3>
-        <div id="reading-container" class="reading-text hidden"></div>
-        <h2 id="question-text" style="margin: 15px 0; color: #222;"></h2>
-        <div id="options-container"></div>
-        <div id="feedback"></div>
-        <div class="copyright">أ/ <span class="normal-text">عبدالعزيز الفيفي</span> - <span class="normal-text">ثانوية الأمير عبدالمجيد 🎓</span></div>
+    <div class="stats-container">
+        <div class="stat-card"><h3>المختبرون</h3><p id="count">0</p></div>
+        <div class="stat-card"><h3>متوسط الأداء</h3><p id="avg">0%</p></div>
+        <div class="stat-card"><h3>أعلى نتيجة</h3><p id="max">0%</p></div>
+        <div class="stat-card"><h3>دون المتوسط</h3><p id="low">0</p></div>
     </div>
 
-    <div id="result-section" class="hidden">
-        <h2 style="color: var(--primary);">انتهى سباق التميز!</h2>
-        <h1 id="final-score" style="font-size: 3rem; color: var(--accent); margin: 20px 0;"></h1>
-        <button class="btn-start" onclick="location.reload()">أعد الكرة 🔄</button>
-        <p class="copyright">بإشراف أ/ <span class="normal-text">عبدالعزيز الفيفي</span> - <span class="normal-text">ثانوية الأمير عبدالمجيد 🎓</span></p>
+    <div class="main-grid">
+        <div class="chart-wrapper"><canvas id="skillsChart"></canvas></div>
+        <div class="chart-wrapper"><canvas id="levelsChart"></canvas></div>
+    </div>
+
+    <div class="table-box">
+        <table>
+            <thead>
+                <tr>
+                    <th>اسم الطالب</th>
+                    <th>الصف / الفصل</th> <th>الدرجة</th>
+                    <th>تناظر</th>
+                    <th>إكمال</th>
+                    <th>سياقي</th>
+                    <th>استيعاب</th>
+                    <th>النموذج</th>
+                    <th id="action-header" class="no-print">إجراء</th>
+                </tr>
+            </thead>
+            <tbody id="data-rows"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="qr-modal">
+    <div class="modal-content">
+        <h3>مشاركة تقرير النموذج (للعرض فقط)</h3>
+        <div id="qrcode"></div>
+        <input type="text" id="share-url" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; text-align: center;">
+        <button class="close-btn" onclick="copyLink()">نسخ الرابط</button>
+        <button class="close-btn" style="background:#666" onclick="closeQR()">إغلاق</button>
     </div>
 </div>
 
 <script>
-    // إعدادات Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyBkCO7FDQXd89YDf843J4_AtvEFvzzt-R0",
         authDomain: "aztlg-494c3.firebaseapp.com",
@@ -77,131 +122,179 @@
         messagingSenderId: "597051893949",
         appId: "1:597051893949:web:de5554ac900317a92b2fd4"
     };
-    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    function updateDateTime() {
-        const today = new Date();
-        const hijriOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', calendar: 'islamic-umalqura', numberingSystem: 'arabic' };
-        const gregOptions = { day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'arabic' };
-        document.getElementById('date-display').innerText = `${new Intl.DateTimeFormat('ar-SA', hijriOptions).format(today)} | ${new Intl.DateTimeFormat('ar-SA', gregOptions).format(today)} م`;
-    }
+    let chartA, chartB, currentUnsubscribe = null;
+    let selectedModel = 'all';
 
-    let timeLeft = 40, timerInterval, currentQ = 0, score = 0;
-    const rawData = [
-        { type: "التناظر اللفظي", q: "فيافي : قفر", options: ["بيداء : فلات", "مدن : عمران", "بحار : عمق", "نجوم : ضياء"], correctText: "بيداء : فلات" },
-        { type: "الخطأ في السياق", q: "إن طول العمر لا يقاس بالسنين، بل بما حققه الإنسان من فشل في حياته يخلد ذكره", options: ["العمر", "بالسنين", "حققه", "فشل"], correctText: "فشل" },
-        { type: "إكمال الجمل", q: "من أراد حلاوة ..... فليصبر على مرارة .....", options: ["العسل - اللسع", "النجاح - الفشل", "الراحة - السهر", "الفوز - التعب"], correctText: "العسل - اللسع" }
-    ];
+    const urlParams = new URLSearchParams(window.location.search);
+    const isViewOnly = urlParams.has('view');
+    const viewId = urlParams.get('view');
 
-    let quizData = [];
-    function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-
-    function startQuiz() {
-        const name = document.getElementById('student-name').value;
-        const grade = document.getElementById('student-grade').value;
-        const sClass = document.getElementById('student-class').value;
-        if (!name || !grade || !sClass) { alert("لطفاً، أكمل جميع البيانات (الاسم، الصف، الفصل)"); return; }
-        
-        quizData = shuffle([...rawData]);
-        document.getElementById('login-section').classList.add('hidden');
-        document.getElementById('quiz-section').classList.remove('hidden');
-        showQuestion();
-    }
-
-    function showQuestion() {
-        const q = quizData[currentQ];
-        document.getElementById('question-title').innerText = `س ${currentQ + 1} | ${q.type}`;
-        const readingBox = document.getElementById('reading-container');
-        if (q.text) { readingBox.innerText = q.text; readingBox.classList.remove('hidden'); } else { readingBox.classList.add('hidden'); }
-        document.getElementById('question-text').innerText = q.q;
-        const container = document.getElementById('options-container');
-        container.innerHTML = '';
-        document.getElementById('feedback').innerText = '';
-        shuffle([...q.options]).forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'option-btn';
-            btn.innerText = opt;
-            btn.onclick = () => checkAnswer(btn, opt === q.correctText, q.correctText);
-            container.appendChild(btn);
-        });
-        startTimer();
-    }
-
-    function startTimer() {
-        clearInterval(timerInterval);
-        timeLeft = 40;
-        updateTimerUI();
-        timerInterval = setInterval(() => { timeLeft--; updateTimerUI(); if (timeLeft <= 0) { clearInterval(timerInterval); handleTimeout(); } }, 1000);
-    }
-
-    function updateTimerUI() {
-        document.getElementById('timer-text').innerText = `⏳ المتبقي: ${timeLeft} ثانية`;
-        document.getElementById('timer-bar').style.width = `${(timeLeft / 40) * 100}%`;
-    }
-
-    function checkAnswer(btn, isCorrect, correctText) {
-        clearInterval(timerInterval);
-        disableButtons();
-        if (isCorrect) {
-            score++;
-            btn.classList.add('correct-flash');
-            document.getElementById('feedback').innerHTML = "<span style='color:var(--correct)'>رائع! إجابة دقيقة 🌟</span>";
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-        } else {
-            btn.classList.add('wrong-flash');
-            highlightCorrect(correctText);
-            document.getElementById('feedback').innerHTML = "<span style='color:var(--wrong)'>المكان الصحيح موضح بالأخضر 💪</span>";
+    function initListener(modelId) {
+        if (currentUnsubscribe) currentUnsubscribe();
+        if(isViewOnly) {
+            document.getElementById('action-header').classList.add('view-only-hide');
+            document.getElementById('nav-bar').classList.add('view-only-hide');
         }
-        setTimeout(nextQuestion, 4000);
-    }
 
-    function handleTimeout() {
-        disableButtons();
-        highlightCorrect(quizData[currentQ].correctText);
-        document.getElementById('feedback').innerHTML = "<span style='color:var(--accent)'>انتهى الوقت! 🕒</span>";
-        setTimeout(nextQuestion, 4000);
-    }
+        currentUnsubscribe = db.collection("student_results").orderBy("time", "desc").onSnapshot(snapshot => {
+            if(!isViewOnly) updateModelButtons(snapshot);
+            
+            let scores = [], rows = "";
+            let levels = { exc: 0, vgood: 0, good: 0, acc: 0, weak: 0 };
+            let skillsSums = { tan: 0, ekm: 0, syq: 0, st: 0 };
+            let studentCount = 0;
 
-    function highlightCorrect(text) {
-        document.querySelectorAll('.option-btn').forEach(b => { if (b.innerText === text) b.classList.add('correct-flash'); });
-    }
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                let actualModel = d.model_id || '15';
+                if (modelId === 'all' || actualModel == modelId) {
+                    const p = Math.round((d.score / d.total) * 100);
+                    scores.push(p);
+                    studentCount++;
 
-    function disableButtons() { document.querySelectorAll('.option-btn').forEach(b => b.disabled = true); }
+                    if(p >= 90) levels.exc++;
+                    else if(p >= 80) levels.vgood++;
+                    else if(p >= 70) levels.good++;
+                    else if(p >= 60) levels.acc++;
+                    else levels.weak++;
 
-    function nextQuestion() {
-        currentQ++;
-        if (currentQ < quizData.length) showQuestion(); else finishQuiz();
-    }
+                    // محاولة استخراج الفصل من الاسم إذا لم يكن منفصلاً
+                    let displayName = d.name.split('(')[0].trim();
+                    let classInfo = "---";
+                    
+                    // إذا كان الاسم يحتوي على أرقام في آخره (تنسيق الصف/الفصل)
+                    let match = displayName.match(/\d+\s*\/\s*\d+/);
+                    if(match) {
+                        classInfo = match[0];
+                        displayName = displayName.replace(match[0], "").trim();
+                    }
 
-    async function saveToCloud() {
-        const name = document.getElementById('student-name').value;
-        const grade = document.getElementById('student-grade').value;
-        const sClass = document.getElementById('student-class').value;
-        const dateStr = new Date().toLocaleDateString('ar-SA'); 
-        
-        // دمج البيانات بالتنسيق المطلوب
-        const fullInfo = `${name} ${grade} / ${sClass}`;
+                    let s = d.sections || { 
+                        tan: p, ekm: Math.max(0, p-5), syq: Math.min(100, p+3), st: Math.max(0, p-10) 
+                    };
+                    
+                    Object.keys(skillsSums).forEach(k => skillsSums[k] += s[k]);
 
-        try {
-            await db.collection("student_results").add({
-                name: fullInfo + " (" + dateStr + ")",
-                score: score, 
-                total: quizData.length,
-                model_id: "تحدي اليوم", 
-                time: firebase.firestore.FieldValue.serverTimestamp()
+                    rows += `<tr>
+                        <td><strong>${displayName}</strong></td>
+                        <td style="color:#666">${classInfo}</td>
+                        <td style="color:var(--accent); font-weight:bold">${d.score}/${d.total}</td>
+                        ${['tan','ekm','syq','st'].map(k => `<td>${s[k]}%<div class="prog-circle"><div class="prog-fill" style="width:${s[k]}%; background:${s[k]<60?'#ef4444':s[k]<80?'#f59e0b':'#10b981'}"></div></div></td>`).join('')}
+                        <td>${actualModel}</td>
+                        <td class="no-print ${isViewOnly ? 'view-only-hide' : ''}">
+                            <button style="color:red;border:none;background:none;cursor:pointer" onclick="deleteDoc('${doc.id}')">حذف</button>
+                        </td>
+                    </tr>`;
+                }
             });
-        } catch (e) { console.error("Error:", e); }
+
+            document.getElementById('data-rows').innerHTML = rows;
+            updateSummary(scores, levels);
+            let avgSkills = ['tan','ekm','syq','st'].map(k => Math.round(skillsSums[k] / studentCount) || 0);
+            drawCharts(levels, avgSkills);
+        });
     }
 
-    function finishQuiz() {
-        document.getElementById('quiz-section').classList.add('hidden');
-        document.getElementById('result-section').classList.remove('hidden');
-        document.getElementById('final-score').innerText = `${score} / ${quizData.length}`;
-        
-        // استدعاء حفظ البيانات في السحابة
-        saveToCloud(); 
+    function setMod(m) { 
+        selectedModel = m; 
+        const actionArea = document.getElementById('action-area');
+        if (m === 'all') {
+            document.getElementById('main-title').innerText = "📊 منصة التحليل الذكي";
+            actionArea.innerHTML = `<button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>`;
+        } else {
+            document.getElementById('main-title').innerText = `📊 تحليل نموذج (${m})`;
+            if(!isViewOnly) {
+                actionArea.innerHTML = `
+                    <button class="btn-share" onclick="generateShareLink('${m}')">🔗 مشاركة</button>
+                    <button class="bulk-delete-btn" onclick="deleteEntireModel('${m}')">🗑️ تصفير النموذج</button>
+                    <button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>`;
+            } else {
+                actionArea.innerHTML = `<button class="model-btn" style="background:#1e293b; color:white" onclick="window.print()">🖨️ طباعة</button>`;
+            }
+        }
+        initListener(m); 
     }
+
+    function updateModelButtons(snapshot) {
+        if(isViewOnly) return;
+        const navBar = document.getElementById('nav-bar');
+        const foundModels = new Set();
+        snapshot.forEach(doc => foundModels.add(doc.data().model_id?.toString() || "15"));
+        let buttonsHtml = `<button class="model-btn ${selectedModel === 'all' ? 'active' : ''}" onclick="setMod('all')">🌍 عرض الكل</button>`;
+        Array.from(foundModels).sort().forEach(mId => {
+            buttonsHtml += `<button class="model-btn ${selectedModel === mId ? 'active' : ''}" onclick="setMod('${mId}')">${mId}</button>`;
+        });
+        navBar.innerHTML = buttonsHtml;
+    }
+
+    async function deleteEntireModel(modelId) {
+        if(isViewOnly) return;
+        if(confirm(`تنبيه: هل أنت متأكد من حذف جميع نتائج النموذج رقم (${modelId})؟`)) {
+            const snap = await db.collection("student_results").where("model_id", "==", modelId).get();
+            const batch = db.batch();
+            snap.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            alert("تم تصفير النموذج بنجاح.");
+            setMod('all');
+        }
+    }
+
+    function generateShareLink(modelId) {
+        const shareUrl = `${window.location.href.split('?')[0]}?view=${modelId}`;
+        document.getElementById('share-url').value = shareUrl;
+        document.getElementById('qrcode').innerHTML = "";
+        new QRCode(document.getElementById("qrcode"), { text: shareUrl, width: 150, height: 150 });
+        document.getElementById('qr-modal').style.display = 'flex';
+    }
+
+    function copyLink() { document.getElementById('share-url').select(); document.execCommand("copy"); alert("تم نسخ رابط المشاركة (للعرض فقط)"); }
+    function closeQR() { document.getElementById('qr-modal').style.display = 'none'; }
+
+    function updateSummary(s, l) {
+        document.getElementById('count').innerText = s.length;
+        if(s.length > 0) {
+            document.getElementById('avg').innerText = Math.round(s.reduce((a,b)=>a+b,0)/s.length) + "%";
+            document.getElementById('max').innerText = Math.max(...s) + "%";
+            document.getElementById('low').innerText = l.acc + l.weak;
+        }
+    }
+
+    async function deleteDoc(id) { if(isViewOnly) return; if(confirm("حذف الطالب؟")) await db.collection("student_results").doc(id).delete(); }
+
+    function drawCharts(lv, skills) {
+        const ctx1 = document.getElementById('skillsChart').getContext('2d');
+        if(chartA) chartA.destroy();
+        chartA = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: ['تناظر', 'إكمال', 'سياقي', 'استيعاب'],
+                datasets: [{ 
+                    label: 'متوسط الأداء', 
+                    data: skills, 
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
+                    borderRadius: 8
+                }]
+            },
+            options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }, plugins: { legend: { display: false } } }
+        });
+
+        const ctx2 = document.getElementById('levelsChart').getContext('2d');
+        if(chartB) chartB.destroy();
+        chartB = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['ممتاز', 'جيد جداً', 'جيد', 'مقبول', 'ضعيف'],
+                datasets: [{ data: [lv.exc, lv.vgood, lv.good, lv.acc, lv.weak], backgroundColor: ['#10b981', '#0284c7', '#f59e0b', '#b45309', '#ef4444'] }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    if(isViewOnly) setMod(viewId); else setMod('all');
 </script>
 </body>
-</html>
+    </html>
+    
