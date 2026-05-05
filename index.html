@@ -8,9 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg: #f8fafc; --card-bg: #ffffff; --accent: #0284c7;
+            --bg: #f8fafc; --card-bg: #ffffff; --maroon: #800000;
             --text-main: #1e293b; --text-sub: #64748b; --border: #e2e8f0;
-            --row-alt: #fffdec; --maroon: #800000;
+            --row-alt: #fffdec;
         }
 
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 20px; }
@@ -76,6 +76,7 @@
 </div>
 
 <script>
+    // إعدادات Firebase الخاصة بك
     const firebaseConfig = {
         apiKey: "AIzaSyBkCO7FDQXd89YDf843J4_AtvEFvzzt-R0",
         authDomain: "aztlg-494c3.firebaseapp.com",
@@ -103,10 +104,18 @@
                     count++;
                     scores.push(d.score);
                     
+                    // هنا التعديل الجوهري لقراءة الحقول الجديدة مباشرة
+                    let emailValue = d.email || "---";
+                    let classValue = d.student_class || "---";
+                    let nameValue = d.name || "---";
+
+                    // إذا كان الاسم يحتوي على تاريخ مدمج، نقوم بتنظيفه للعرض فقط
+                    let displayName = nameValue.split('(')[0].trim();
+
                     rows += `<tr>
-                        <td><strong>${d.name || "---"}</strong></td>
-                        <td class="email-text">${d.email || "---"}</td>
-                        <td>${d.student_class || "---"}</td>
+                        <td><strong>${displayName}</strong></td>
+                        <td class="email-text">${emailValue}</td>
+                        <td style="font-weight:bold">${classValue}</td>
                         <td style="font-weight:bold; color:var(--maroon)">${d.score} / ${d.total}</td>
                         <td>${d.model_id}</td>
                         <td class="no-print">
@@ -129,7 +138,9 @@
     function updateModelButtons(snapshot) {
         const navBar = document.getElementById('nav-bar');
         const models = new Set();
-        snapshot.forEach(doc => models.add(doc.data().model_id));
+        snapshot.forEach(doc => {
+            if(doc.data().model_id) models.add(doc.data().model_id);
+        });
         
         let html = `<button class="model-btn ${selectedModel === 'all' ? 'active' : ''}" onclick="changeModel('all')">الكل</button>`;
         Array.from(models).sort().forEach(m => {
@@ -149,7 +160,6 @@
         }
     }
 
-    // التشغيل الأول
     initListener('all');
 </script>
 </body>
