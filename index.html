@@ -12,7 +12,7 @@
             --bg: #f8fafc; --card-bg: #ffffff; --accent: #0284c7;
             --gold: #b45309; --danger: #dc2626; --text-main: #1e293b;
             --text-sub: #64748b; --border: #e2e8f0;
-            --row-alt: #fffdec; 
+            --row-alt: #fffdec; /* لون أصفر خفيف جداً للصفوف المتبادلة */
         }
 
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 20px; }
@@ -89,11 +89,15 @@
             <thead>
                 <tr>
                     <th>اسم الطالب</th>
-                    <th>الصف / الفصل</th> <th>الدرجة</th>
+                    <th>الصف / الفصل</th>
+                    <th>الدرجة</th>
                     <th>تناظر</th>
                     <th>إكمال</th>
                     <th>سياقي</th>
                     <th>استيعاب</th>
+                    <th>شاذة</th>
+                    <th>ارتباط</th>
+                    <th>اختلاف</th>
                     <th>النموذج</th>
                     <th id="action-header" class="no-print">إجراء</th>
                 </tr>
@@ -144,7 +148,7 @@
             
             let scores = [], rows = "";
             let levels = { exc: 0, vgood: 0, good: 0, acc: 0, weak: 0 };
-            let skillsSums = { tan: 0, ekm: 0, syq: 0, st: 0 };
+            let skillsSums = { tan: 0, ekm: 0, syq: 0, st: 0, mfr: 0, art: 0, ikh: 0 };
             let studentCount = 0;
 
             snapshot.forEach(doc => {
@@ -161,28 +165,30 @@
                     else if(p >= 60) levels.acc++;
                     else levels.weak++;
 
-                    // محاولة استخراج الفصل من الاسم إذا لم يكن منفصلاً
-                    let displayName = d.name.split('(')[0].trim();
+                    // --- ذكاء معالجة الاسم والفصل ---
+                    let rawName = d.name.split('(')[0].trim(); // تنظيف التاريخ
                     let classInfo = "---";
-                    
-                    // إذا كان الاسم يحتوي على أرقام في آخره (تنسيق الصف/الفصل)
-                    let match = displayName.match(/\d+\s*\/\s*\d+/);
-                    if(match) {
-                        classInfo = match[0];
-                        displayName = displayName.replace(match[0], "").trim();
+                    let finalName = rawName;
+
+                    // البحث عن نمط "رقم / رقم" (مثل 2 / 3) في النص
+                    let classMatch = rawName.match(/\d+\s*\/\s*\d+/);
+                    if (classMatch) {
+                        classInfo = classMatch[0]; // استخراج الفصل
+                        finalName = rawName.replace(classMatch[0], "").trim(); // مسح الفصل من خانة الاسم
                     }
 
                     let s = d.sections || { 
-                        tan: p, ekm: Math.max(0, p-5), syq: Math.min(100, p+3), st: Math.max(0, p-10) 
+                        tan: p, ekm: Math.max(0, p-5), syq: Math.min(100, p+3), 
+                        st: Math.max(0, p-10), mfr: p, art: Math.min(100, p+2), ikh: Math.max(0, p-4) 
                     };
                     
                     Object.keys(skillsSums).forEach(k => skillsSums[k] += s[k]);
 
                     rows += `<tr>
-                        <td><strong>${displayName}</strong></td>
-                        <td style="color:#666">${classInfo}</td>
+                        <td><strong>${finalName}</strong></td>
+                        <td style="color:#666; font-weight:bold">${classInfo}</td>
                         <td style="color:var(--accent); font-weight:bold">${d.score}/${d.total}</td>
-                        ${['tan','ekm','syq','st'].map(k => `<td>${s[k]}%<div class="prog-circle"><div class="prog-fill" style="width:${s[k]}%; background:${s[k]<60?'#ef4444':s[k]<80?'#f59e0b':'#10b981'}"></div></div></td>`).join('')}
+                        ${['tan','ekm','syq','st','mfr','art','ikh'].map(k => `<td>${s[k]}%<div class="prog-circle"><div class="prog-fill" style="width:${s[k]}%; background:${s[k]<60?'#ef4444':s[k]<80?'#f59e0b':'#10b981'}"></div></div></td>`).join('')}
                         <td>${actualModel}</td>
                         <td class="no-print ${isViewOnly ? 'view-only-hide' : ''}">
                             <button style="color:red;border:none;background:none;cursor:pointer" onclick="deleteDoc('${doc.id}')">حذف</button>
@@ -193,7 +199,7 @@
 
             document.getElementById('data-rows').innerHTML = rows;
             updateSummary(scores, levels);
-            let avgSkills = ['tan','ekm','syq','st'].map(k => Math.round(skillsSums[k] / studentCount) || 0);
+            let avgSkills = ['tan','ekm','syq','st','mfr','art','ikh'].map(k => Math.round(skillsSums[k] / studentCount) || 0);
             drawCharts(levels, avgSkills);
         });
     }
@@ -270,15 +276,19 @@
         chartA = new Chart(ctx1, {
             type: 'bar',
             data: {
-                labels: ['تناظر', 'إكمال', 'سياقي', 'استيعاب'],
+                labels: ['تناظر', 'إكمال', 'سياقي', 'استيعاب', 'شاذة', 'ارتباط', 'اختلاف'],
                 datasets: [{ 
                     label: 'متوسط الأداء', 
                     data: skills, 
-                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'],
                     borderRadius: 8
                 }]
             },
-            options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }, plugins: { legend: { display: false } } }
+            options: { 
+                maintainAspectRatio: false, 
+                scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
+                plugins: { legend: { display: false } }
+            }
         });
 
         const ctx2 = document.getElementById('levelsChart').getContext('2d');
@@ -296,5 +306,4 @@
     if(isViewOnly) setMod(viewId); else setMod('all');
 </script>
 </body>
-    </html>
-    
+</html>
